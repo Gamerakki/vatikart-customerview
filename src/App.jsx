@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { loadStoreProducts, getStoreConfig } from './services/storeApi';
+import { loadStoreProducts, getStoreConfig, bookPublicOrder } from './services/storeApi';
 import Header from './components/Header';
 import FilterSidebar from './components/FilterSidebar';
 import ProductCard from './components/ProductCard';
@@ -298,29 +298,42 @@ export default function App() {
     setCart([]); // Clear cart upon successful invoice booking
   };
 
-  const handleConfirmCheckout = (checkoutDetails) => {
-    // 1. Open WhatsApp message redirect
-    window.open(checkoutDetails.whatsappMsg ? `https://wa.me/919876543210?text=${encodeURIComponent(checkoutDetails.whatsappMsg)}` : `https://wa.me/919876543210`, '_blank');
-    
-    // 2. Open printable invoice modal receipt
-    setInvoiceData({
-      customer: checkoutDetails.customer,
-      items: checkoutDetails.items,
-      subtotal: checkoutDetails.subtotal,
-      tax: checkoutDetails.tax,
-      total: checkoutDetails.total,
-      orderId: 'VK-' + Math.floor(100000 + Math.random() * 900000),
-      date: new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    });
-    
-    // 3. Reset view to catalog
-    setCurrentView('catalog');
+  const handleConfirmCheckout = async (checkoutDetails) => {
+    try {
+      // 1. Save order to database and get generated order_id
+      const result = await bookPublicOrder(checkoutDetails);
+      const orderId = result.order_id || ('VK-' + Math.floor(100000 + Math.random() * 900000));
+      
+      // Update whatsapp message with the real Order ID
+      const updatedWhatsappMsg = checkoutDetails.whatsappMsg
+        ? checkoutDetails.whatsappMsg.replace('*New Order from VatiKart Storefront!*', `*New Order #${orderId} from VatiKart Storefront!*`)
+        : '';
+
+      // 2. Open WhatsApp message redirect
+      window.open(updatedWhatsappMsg ? `https://wa.me/919876543210?text=${encodeURIComponent(updatedWhatsappMsg)}` : `https://wa.me/919876543210`, '_blank');
+      
+      // 3. Open printable invoice modal receipt
+      setInvoiceData({
+        customer: checkoutDetails.customer,
+        items: checkoutDetails.items,
+        subtotal: checkoutDetails.subtotal,
+        tax: checkoutDetails.tax,
+        total: checkoutDetails.total,
+        orderId: orderId,
+        date: new Date().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      });
+      
+      // 4. Reset view to catalog
+      setCurrentView('catalog');
+    } catch (error) {
+      alert(error.message || 'Failed to place order. Please try again.');
+    }
   };
 
   const totalCartCount = useMemo(() => {

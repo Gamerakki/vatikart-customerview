@@ -142,3 +142,46 @@ export async function loadStoreProducts() {
     message: 'Catalogue not found or unable to fetch products.',
   };
 }
+
+export async function bookPublicOrder(checkoutDetails) {
+  const { catalogueId, apiBase } = getStoreConfig();
+  
+  const payload = {
+    catalogue_id: parseInt(catalogueId, 10),
+    customer_name: checkoutDetails.customer.name,
+    customer_phone: checkoutDetails.customer.phone,
+    customer_address: checkoutDetails.customer.address,
+    items: checkoutDetails.items.map((item) => ({
+      product_id: parseInt(item.id, 10),
+      qty: item.quantity,
+      price: Number(item.price),
+      selected_size: item.selectedSize && item.selectedSize !== 'One Size' ? item.selectedSize : null,
+      selected_color: item.selectedColor ? item.selectedColor.name : null,
+    })),
+    subtotal: Number(checkoutDetails.subtotal),
+    discount: Number(checkoutDetails.discount),
+    shipping: 0,
+    tax: Number(checkoutDetails.tax),
+    total: Number(checkoutDetails.total),
+  };
+
+  const response = await fetch(`${apiBase}/order/public/book`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to save order to database.');
+  }
+
+  const result = await response.json();
+  if (!result.status) {
+    throw new Error(result.msg || 'Failed to save order to database.');
+  }
+
+  return result.data; // contains order_id and total
+}
