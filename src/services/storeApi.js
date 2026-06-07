@@ -22,6 +22,14 @@ export function getStoreConfig() {
   return { catalogueId, apiBase, token, storeName };
 }
 
+function getFullImageUrl(path) {
+  if (!path) return undefined;
+  if (path.startsWith('http') || path.startsWith('file:') || path.startsWith('content:')) {
+    return path;
+  }
+  return `https://cdn.vatikart.in/${path}`;
+}
+
 function mapApiProduct(item, index) {
   const price = Number(item.price) || 0;
   const title = item.product || item.title || `Product ${index + 1}`;
@@ -38,8 +46,8 @@ function mapApiProduct(item, index) {
     tag: item.total_stock > 0 ? 'In Stock' : 'Out of Stock',
     description: item.description || item.slug || title,
     image:
-      item.img_path
-      || item.imageUri
+      getFullImageUrl(item.img_path)
+      || getFullImageUrl(item.imageUri)
       || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop&q=60',
     sizes: item.sizes?.length
       ? item.sizes.map((s) => (typeof s === 'string' ? s : s.label))
@@ -73,19 +81,25 @@ async function fetchWithAuthPaths(catalogueId, apiBase, token) {
   };
 
   const paths = [
+    `/catalogue/public/${catalogueId}/products`,
     `/product/fetch-list/${catalogueId}`,
     `/catalogue/${catalogueId}/products`,
-    `/catalogue/public/${catalogueId}/products`,
     `/store/catalogue/${catalogueId}/products`,
   ];
 
   for (const path of paths) {
     const body = await tryFetchJson(`${apiBase}${path}`, { headers });
-    if (body?.status && Array.isArray(body.data) && body.data.length >= 0) {
-      return body.data.map(mapApiProduct);
+    if (body?.status && Array.isArray(body.data)) {
+      return {
+        products: body.data.map(mapApiProduct),
+        title: body.title || null
+      };
     }
-    if (Array.isArray(body) && body.length > 0) {
-      return body.map(mapApiProduct);
+    if (Array.isArray(body)) {
+      return {
+        products: body.map(mapApiProduct),
+        title: null
+      };
     }
   }
 
@@ -97,30 +111,23 @@ export async function loadStoreProducts() {
 
   if (!catalogueId) {
     return {
-      products: fallbackProducts,
-      source: 'static',
+      products: [],
+      title: null,
+      source: 'api',
       catalogueId: null,
-      message: 'No catalogue id in URL — showing demo catalog. Use ?catalogue=ID&token=JWT for live preview.',
+      message: 'No catalogue ID specified.',
     };
   }
 
   try {
     const live = await fetchWithAuthPaths(catalogueId, apiBase, token);
-    if (live && live.length > 0) {
+    if (live) {
       return {
-        products: live,
+        products: live.products,
+        title: live.title,
         source: 'api',
         catalogueId,
-        message: null,
-      };
-    }
-
-    if (live && live.length === 0) {
-      return {
-        products: [],
-        source: 'api',
-        catalogueId,
-        message: 'This catalogue has no published products yet.',
+        message: live.products.length === 0 ? 'This catalogue has no products yet.' : null,
       };
     }
   } catch (err) {
@@ -128,11 +135,10 @@ export async function loadStoreProducts() {
   }
 
   return {
-    products: fallbackProducts,
-    source: 'fallback',
+    products: [],
+    title: null,
+    source: 'api',
     catalogueId,
-    message: token
-      ? 'Could not load live catalogue — showing demo products.'
-      : 'Add ?token=YOUR_JWT from merchant console for authenticated preview, or publish products on the API.',
+    message: 'Catalogue not found or unable to fetch products.',
   };
 }

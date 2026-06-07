@@ -28,8 +28,12 @@ export default function App() {
       if (cancelled) return;
       setProducts(result.products);
       setCatalogNotice(result.message);
-      const cfg = getStoreConfig();
-      if (cfg.storeName) setStoreTitle(cfg.storeName);
+      if (result.title) {
+        setStoreTitle(result.title);
+      } else {
+        const cfg = getStoreConfig();
+        if (cfg.storeName) setStoreTitle(cfg.storeName);
+      }
       setCatalogLoading(false);
     })();
     return () => {
