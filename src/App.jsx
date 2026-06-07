@@ -383,7 +383,7 @@ export default function App() {
       )}
 
       {currentView === 'catalog' ? (
-        <main className="container" style={{ flex: 1, padding: '32px 24px', display: 'grid', gridTemplateColumns: '280px 1fr', gap: '32px' }}>
+        <main className="container main-layout" style={{ flex: 1, padding: '32px 24px' }}>
           
           {/* Sidebar Filters */}
           <aside className="sidebar-container">
@@ -521,9 +521,15 @@ export default function App() {
 
       {/* Responsive layout styles injection */}
       <style>{`
+        .main-layout {
+          display: grid;
+          grid-template-columns: 280px 1fr;
+          gap: 32px;
+        }
         @media (max-width: 992px) {
-          main.container {
-            grid-template-columns: 1fr !important;
+          .main-layout {
+            display: flex !important;
+            flex-direction: column !important;
             gap: 24px !important;
           }
           .sidebar-container {
