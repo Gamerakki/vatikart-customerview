@@ -49,6 +49,11 @@ function mapApiProduct(item, index) {
       getFullImageUrl(item.img_path)
       || getFullImageUrl(item.imageUri)
       || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop&q=60',
+    gallery: item.images && item.images.length > 0
+      ? item.images.map(getFullImageUrl)
+      : [
+          getFullImageUrl(item.img_path) || getFullImageUrl(item.imageUri) || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop&q=60'
+        ],
     sizes: item.sizes?.length
       ? item.sizes.map((s) => (typeof s === 'string' ? s : s.label))
       : ['One Size'],
