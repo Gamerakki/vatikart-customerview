@@ -147,7 +147,7 @@ export async function bookPublicOrder(checkoutDetails) {
   const { catalogueId, apiBase } = getStoreConfig();
   
   const payload = {
-    catalogue_id: parseInt(catalogueId, 10),
+    catalogue_id: isNaN(parseInt(catalogueId, 10)) ? catalogueId : parseInt(catalogueId, 10),
     customer_name: checkoutDetails.customer.name,
     customer_phone: checkoutDetails.customer.phone,
     customer_address: checkoutDetails.customer.address,
