@@ -3,8 +3,8 @@ import { products as fallbackProducts } from '../data/products';
 const DEFAULT_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.vatikart.in';
 
 function parseCatalogueIdFromPath() {
-  const match = window.location.pathname.match(/\/c\/(\d+)/i)
-    || window.location.pathname.match(/\/catalogue\/(\d+)/i);
+  const match = window.location.pathname.match(/\/c\/([a-zA-Z0-9\-]+)/i)
+    || window.location.pathname.match(/\/catalogue\/([a-zA-Z0-9\-]+)/i);
   return match ? match[1] : null;
 }
 
