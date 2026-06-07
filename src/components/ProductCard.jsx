@@ -4,6 +4,7 @@ import { Star, Eye, Plus } from 'lucide-react';
 export default function ProductCard({ product, onViewDetails, onQuickAdd }) {
   // Calculate discount percentage
   const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+  const isOutOfStock = product.tag?.toLowerCase() === 'out of stock';
 
   // Helper for tag style
   const getTagStyle = (tag) => {
@@ -13,6 +14,7 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd }) {
       case 'new arrival':
         return { background: 'rgba(99, 102, 241, 0.12)', color: '#6366f1' };
       case 'sale':
+      case 'out of stock':
         return { background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444' };
       default:
         return { background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b' };
@@ -116,7 +118,8 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd }) {
           </button>
           
           <button
-            onClick={() => onQuickAdd(product)}
+            onClick={() => !isOutOfStock && onQuickAdd(product)}
+            disabled={isOutOfStock}
             className="btn btn-primary"
             style={{
               padding: '8px 14px',
@@ -125,11 +128,13 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd }) {
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              fontWeight: 600
+              fontWeight: 600,
+              opacity: isOutOfStock ? 0.5 : 1,
+              cursor: isOutOfStock ? 'not-allowed' : 'pointer'
             }}
           >
             <Plus size={14} />
-            Add
+            {isOutOfStock ? 'Sold Out' : 'Add'}
           </button>
         </div>
       </div>

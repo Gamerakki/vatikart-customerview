@@ -299,12 +299,28 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
         {/* Footer Actions */}
         <div className="drawer-footer">
           <button
-            onClick={handleAdd}
+            onClick={() => {
+              if (product.tag?.toLowerCase() !== 'out of stock') {
+                handleAdd();
+              }
+            }}
+            disabled={product.tag?.toLowerCase() === 'out of stock'}
             className="btn btn-primary"
-            style={{ width: '100%', height: '48px', display: 'flex', justifyContent: 'center', gap: '10px', fontSize: '1rem' }}
+            style={{ 
+              width: '100%', 
+              height: '48px', 
+              display: 'flex', 
+              justifyContent: 'center', 
+              gap: '10px', 
+              fontSize: '1rem',
+              opacity: product.tag?.toLowerCase() === 'out of stock' ? 0.5 : 1,
+              cursor: product.tag?.toLowerCase() === 'out of stock' ? 'not-allowed' : 'pointer'
+            }}
           >
             <ShoppingCart size={18} />
-            Add to Cart — ₹{(product.price * quantity).toFixed(2)}
+            {product.tag?.toLowerCase() === 'out of stock' 
+              ? 'Out of Stock' 
+              : `Add to Cart — ₹${(product.price * quantity).toFixed(2)}`}
           </button>
         </div>
 
