@@ -383,7 +383,7 @@ export default function App() {
       )}
 
       {currentView === 'catalog' ? (
-        <main className="container main-layout" style={{ flex: 1, padding: '32px 24px' }}>
+        <main className="container main-layout" style={{ flex: 1, padding: '32px 24px', width: '100%' }}>
           
           {/* Sidebar Filters */}
           <aside className="sidebar-container">
