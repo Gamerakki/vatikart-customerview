@@ -170,25 +170,35 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd }) {
         </h4>
 
         {/* Color and Size Previews */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '2px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '6px 0', gap: '8px' }}>
           {/* Colors */}
-          <div style={{ display: 'flex', gap: '5px' }}>
+          <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
             {product.colors.map((c) => (
               <span
                 key={c.name}
                 style={{
-                  width: '10px',
-                  height: '10px',
+                  width: '12px',
+                  height: '12px',
                   borderRadius: '50%',
                   backgroundColor: c.hex,
-                  border: c.name.toLowerCase() === 'white' ? '1px solid var(--border-color)' : 'none'
+                  border: c.name.toLowerCase() === 'white' ? '1px solid var(--border-color)' : 'none',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
                 }}
                 title={c.name}
               />
             ))}
           </div>
           {/* Sizes */}
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+          <div style={{ 
+            fontSize: '0.75rem', 
+            color: 'var(--text-secondary)', 
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            textAlign: 'right',
+            flex: 1
+          }}>
             {product.sizes && product.sizes.length > 0
               ? (product.sizes.length === 1 && product.sizes[0] === 'One Size' ? 'OS' : product.sizes.join(', '))
               : ''

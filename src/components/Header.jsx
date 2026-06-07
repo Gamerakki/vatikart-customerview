@@ -33,8 +33,8 @@ export default function Header({
               </div>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{storeName}</span>
             </div>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              Welcome! Explore our premium curated collection. Simple checkout, no login needed.
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '6px', lineHeight: 1.4 }}>
+              Explore our curated collection. No login needed.
             </p>
           </div>
 
