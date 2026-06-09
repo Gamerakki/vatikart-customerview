@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { loadStoreProducts, getStoreConfig, bookPublicOrder } from './services/storeApi';
+import { loadStoreProducts, getStoreConfig, bookPublicOrder, requestAccessToCatalogue } from './services/storeApi';
 import Header from './components/Header';
 import FilterSidebar from './components/FilterSidebar';
 import ProductCard from './components/ProductCard';
@@ -14,6 +14,10 @@ export default function App() {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogNotice, setCatalogNotice] = useState(null);
   const [storeTitle, setStoreTitle] = useState(() => getStoreConfig().storeName);
+  const [accessError, setAccessError] = useState(null);
+  const [accessRequestStatus, setAccessRequestStatus] = useState('idle'); // 'idle', 'submitting', 'submitted', 'approved'
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState(localStorage.getItem('vatikart_customer_phone') || '');
 
   // Theme state
   const [theme, setTheme] = useState(() => {
@@ -24,22 +28,33 @@ export default function App() {
     let cancelled = false;
     (async () => {
       setCatalogLoading(true);
-      const result = await loadStoreProducts();
-      if (cancelled) return;
-      setProducts(result.products);
-      setCatalogNotice(result.message);
-      if (result.title) {
-        setStoreTitle(result.title);
-      } else {
-        const cfg = getStoreConfig();
-        if (cfg.storeName) setStoreTitle(cfg.storeName);
+      try {
+        const result = await loadStoreProducts();
+        if (cancelled) return;
+        setProducts(result.products);
+        setCatalogNotice(result.message);
+        if (result.title) {
+          setStoreTitle(result.title);
+        } else {
+          const cfg = getStoreConfig();
+          if (cfg.storeName) setStoreTitle(cfg.storeName);
+        }
+        setAccessError(null);
+      } catch (err) {
+        if (cancelled) return;
+        if (err.type === 'REQUIRES_ACCESS') {
+          setAccessError(err);
+        } else {
+          setCatalogNotice('An error occurred while loading the storefront.');
+        }
+      } finally {
+        setCatalogLoading(false);
       }
-      setCatalogLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [accessRequestStatus]);
 
   // Cart state
   const [cart, setCart] = useState(() => {
@@ -340,6 +355,35 @@ export default function App() {
     return cart.reduce((sum, item) => sum + item.quantity, 0);
   }, [cart]);
 
+  const handleRequestAccess = async (e) => {
+    e.preventDefault();
+    if (!customerName || !customerPhone) return;
+    
+    setAccessRequestStatus('submitting');
+    try {
+      await requestAccessToCatalogue(accessError.catalogueId, customerName, customerPhone);
+      localStorage.setItem('vatikart_customer_phone', customerPhone);
+      setAccessRequestStatus('submitted');
+      
+      // Start polling for access approval
+      const interval = setInterval(async () => {
+        try {
+          const result = await loadStoreProducts();
+          if (result && result.products) {
+            clearInterval(interval);
+            setAccessRequestStatus('approved'); // this will trigger the useEffect to reload products
+          }
+        } catch (err) {
+          // Still waiting or rejected
+        }
+      }, 5000);
+      
+    } catch (err) {
+      alert(err.message || 'Failed to request access.');
+      setAccessRequestStatus('idle');
+    }
+  };
+
   if (catalogLoading) {
     return (
       <div style={{
@@ -382,7 +426,106 @@ export default function App() {
         </div>
       )}
 
-      {currentView === 'catalog' ? (
+      {accessError ? (
+        <main className="container" style={{ flex: 1, padding: '48px 24px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{
+            background: 'var(--card-bg)',
+            padding: '40px',
+            borderRadius: '16px',
+            border: '1px solid var(--border-color)',
+            maxWidth: '480px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)'
+          }}>
+            <ShoppingBag size={48} color="var(--accent-primary)" style={{ marginBottom: '20px' }} />
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '12px', color: 'var(--text-primary)' }}>Private Catalogue</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '0.95rem' }}>
+              {accessError.message || 'This catalogue requires approval from the store owner to view.'}
+            </p>
+
+            {accessRequestStatus === 'submitted' ? (
+              <div style={{
+                padding: '24px',
+                background: 'rgba(16, 185, 129, 0.1)',
+                borderRadius: '12px',
+                border: '1px solid rgba(16, 185, 129, 0.2)'
+              }}>
+                <h3 style={{ color: '#10B981', fontSize: '1.1rem', fontWeight: '700', marginBottom: '8px' }}>Request Sent!</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  Please wait while the store owner reviews your request. You will automatically be granted access here once approved.
+                </p>
+                <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
+                  <div className="loading-spinner" style={{ width: '24px', height: '24px', border: '3px solid rgba(16, 185, 129, 0.3)', borderTopColor: '#10B981', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleRequestAccess} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Enter your name"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Phone Number</label>
+                  <input
+                    type="tel"
+                    required
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="Enter your phone number"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)'
+                    }}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={accessRequestStatus === 'submitting'}
+                  style={{
+                    marginTop: '8px',
+                    padding: '14px',
+                    background: 'var(--accent-primary)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: '700',
+                    fontSize: '1rem',
+                    cursor: accessRequestStatus === 'submitting' ? 'not-allowed' : 'pointer',
+                    opacity: accessRequestStatus === 'submitting' ? 0.7 : 1
+                  }}
+                >
+                  {accessRequestStatus === 'submitting' ? 'Submitting...' : 'Request Access'}
+                </button>
+              </form>
+            )}
+          </div>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </main>
+      ) : currentView === 'catalog' ? (
         <main className="container main-layout" style={{ flex: 1, padding: '32px 24px', width: '100%' }}>
           
           {/* Sidebar Filters */}

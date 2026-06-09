@@ -69,20 +69,27 @@ function mapApiProduct(item, index) {
 
 async function tryFetchJson(url, options = {}) {
   const response = await fetch(url, options);
-  if (!response.ok) {
-    return null;
-  }
+  let body = null;
   try {
-    return await response.json();
+    body = await response.json();
   } catch {
+    // ignore
+  }
+  if (!response.ok) {
+    if (response.status === 403 && body?.code === 'REQUIRES_ACCESS') {
+      throw { type: 'REQUIRES_ACCESS', catalogueId: body.catalogueId, message: body.msg };
+    }
     return null;
   }
+  return body;
 }
 
 async function fetchWithAuthPaths(catalogueId, apiBase, token) {
+  const phone = localStorage.getItem('vatikart_customer_phone');
   const headers = {
     Accept: 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(phone ? { 'customer-phone': phone } : {}),
   };
 
   const paths = [
@@ -136,6 +143,9 @@ export async function loadStoreProducts() {
       };
     }
   } catch (err) {
+    if (err.type === 'REQUIRES_ACCESS') {
+      throw err;
+    }
     console.warn('[storeApi] live fetch failed', err);
   }
 
@@ -146,6 +156,23 @@ export async function loadStoreProducts() {
     catalogueId,
     message: 'Catalogue not found or unable to fetch products.',
   };
+}
+
+export async function requestAccessToCatalogue(catalogueId, customerName, customerPhone) {
+  const { apiBase } = getStoreConfig();
+  const response = await fetch(`${apiBase}/catalogue/${catalogueId}/request-access`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ customerName, customerPhone }),
+  });
+  const body = await response.json();
+  if (!response.ok || !body.status) {
+    throw new Error(body.msg || 'Failed to request access.');
+  }
+  return body;
 }
 
 export async function bookPublicOrder(checkoutDetails) {
