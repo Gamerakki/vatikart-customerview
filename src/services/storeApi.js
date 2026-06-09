@@ -161,7 +161,7 @@ export async function loadStoreProducts() {
 
 export async function requestAccessToCatalogue(catalogueId, customerName, customerPhone) {
   const { apiBase } = getStoreConfig();
-  const response = await fetch(`${apiBase}/catalogue/${catalogueId}/request-access`, {
+  const response = await fetch(`${apiBase}/catalogue/public/${catalogueId}/request-access`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
