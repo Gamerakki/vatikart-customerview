@@ -76,8 +76,8 @@ async function tryFetchJson(url, options = {}) {
     // ignore
   }
   if (!response.ok) {
-    if (response.status === 403 && body?.code === 'REQUIRES_ACCESS') {
-      throw { type: 'REQUIRES_ACCESS', catalogueId: body.catalogueId, message: body.msg };
+    if (response.status === 403 && (body?.error === 'REQUIRES_ACCESS' || body?.code === 'REQUIRES_ACCESS')) {
+      throw { type: 'REQUIRES_ACCESS', message: body.msg || 'Private catalogue requires access' };
     }
     return null;
   }
@@ -144,6 +144,7 @@ export async function loadStoreProducts() {
     }
   } catch (err) {
     if (err.type === 'REQUIRES_ACCESS') {
+      err.catalogueId = catalogueId;
       throw err;
     }
     console.warn('[storeApi] live fetch failed', err);
