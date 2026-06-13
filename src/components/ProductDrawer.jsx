@@ -123,7 +123,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
           <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
             Unit: <strong>{product.unitType || 'piece'}</strong>
           </span>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <span className="b2b-matrix-scroll-hint">
             ← Scroll horizontally for sizes →
           </span>
         </div>
@@ -180,6 +180,51 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View Stacked List/Grid */}
+        <div className="b2b-matrix-list-wrap">
+          {product.colors.map(color => (
+            <div key={color.name} className="b2b-matrix-color-section">
+              <div className="b2b-matrix-color-header">
+                <span className="b2b-matrix-color-dot" style={{ backgroundColor: color.hex }} />
+                <span>{color.name}</span>
+              </div>
+              <div className="b2b-matrix-sizes-grid">
+                {product.sizes.map(size => {
+                  const cellKey = `${color.name}_${size}`;
+                  const qty = matrixQuantities[cellKey] || 0;
+                  return (
+                    <div key={size} className="b2b-matrix-size-row">
+                      <span className="b2b-matrix-size-label">{size}</span>
+                      <div className="b2b-matrix-stepper">
+                        <button
+                          type="button"
+                          className="b2b-matrix-stepper-btn"
+                          onClick={() => handleDecrement(color.name, size)}
+                        >
+                          <Minus size={10} />
+                        </button>
+                        <input
+                          type="text"
+                          className="b2b-matrix-stepper-input"
+                          value={qty || 0}
+                          onChange={(e) => handleCellChange(color.name, size, e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="b2b-matrix-stepper-btn"
+                          onClick={() => handleIncrement(color.name, size)}
+                        >
+                          <Plus size={10} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Summary Details */}
