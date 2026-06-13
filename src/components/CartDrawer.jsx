@@ -1,6 +1,26 @@
-import React from 'react';
-import { X, Plus, Minus, Trash2, ShoppingCart, ArrowRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Plus, Minus, Trash2, ShoppingCart, ArrowRight, AlarmClock } from 'lucide-react';
 import { getEffectivePrice, getProductGstAmount } from '../services/pricing';
+
+const CART_HOLD_KEY = 'vatikart_cart_hold_expires';
+const CART_HOLD_MINUTES = 15;
+
+function initCartHold() {
+  const existing = sessionStorage.getItem(CART_HOLD_KEY);
+  if (existing && Number(existing) > Date.now()) return;
+  sessionStorage.setItem(CART_HOLD_KEY, String(Date.now() + CART_HOLD_MINUTES * 60 * 1000));
+}
+
+function getSecondsLeft() {
+  const expires = Number(sessionStorage.getItem(CART_HOLD_KEY) || '0');
+  return Math.max(0, Math.floor((expires - Date.now()) / 1000));
+}
+
+function formatCountdown(secs) {
+  const m = Math.floor(secs / 60).toString().padStart(2, '0');
+  const s = (secs % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
 
 function getNextBulkDiscount(item) {
   if (!item.bulkDiscounts || item.bulkDiscounts.length === 0) {
@@ -52,8 +72,43 @@ export default function CartDrawer({
   cartItems,
   onUpdateQty,
   onRemoveItem,
-  onCheckoutInvoice
+  onCheckoutInvoice,
+  onClearCart,
 }) {
+  const [secondsLeft, setSecondsLeft] = useState(getSecondsLeft);
+  const [holdExpired, setHoldExpired] = useState(false);
+
+  // Start/refresh the hold timer whenever items enter the cart
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      initCartHold();
+      setSecondsLeft(getSecondsLeft());
+      setHoldExpired(false);
+    }
+  }, [cartItems.length]);
+
+  // Tick the countdown every second while the cart has items
+  useEffect(() => {
+    if (cartItems.length === 0) return;
+    const id = setInterval(() => {
+      const secs = getSecondsLeft();
+      setSecondsLeft(secs);
+      if (secs === 0) {
+        clearInterval(id);
+        setHoldExpired(true);
+        sessionStorage.removeItem(CART_HOLD_KEY);
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [cartItems.length]);
+
+  // Show expiry modal and clear cart when timer hits zero
+  useEffect(() => {
+    if (holdExpired && cartItems.length > 0) {
+      if (onClearCart) onClearCart();
+    }
+  }, [holdExpired]);
+
   const subtotal = cartItems.reduce((acc, item) => {
     const effectivePrice = getEffectivePrice(item, item.quantity);
     return acc + (effectivePrice * item.quantity);
@@ -141,6 +196,25 @@ export default function CartDrawer({
             </div>
           ) : (
             <>
+              {/* Cart Hold countdown banner */}
+              {secondsLeft > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                  <AlarmClock size={18} style={{ color: '#d97706', flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#92400e' }}>
+                    Stock reserved for {formatCountdown(secondsLeft)}. Complete checkout to secure your items.
+                  </span>
+                </div>
+              )}
+
+              {holdExpired && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '10px', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                  <AlarmClock size={18} style={{ color: '#dc2626', flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#991b1b' }}>
+                    Your cart hold has expired. Inventory released.
+                  </span>
+                </div>
+              )}
+
               {/* Product list */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {cartItems.map((item, idx) => (

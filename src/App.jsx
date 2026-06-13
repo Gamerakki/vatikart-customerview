@@ -368,6 +368,22 @@ export default function App() {
     });
     // Open cart drawer so user sees item was added
     setIsCartOpen(true);
+    // Analytics
+    postAnalytics('CART_ADD', productWithVariant.id ?? null);
+  };
+
+  const postAnalytics = (eventType, productId = null) => {
+    if (!companyInfo?.companyId) return;
+    const { apiBase } = getStoreConfig();
+    fetch(`${apiBase}/analytics/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        companyId: companyInfo.companyId,
+        productId: productId ?? null,
+        eventType,
+      }),
+    }).catch(() => {});
   };
 
   const emitStorefrontActivity = (activityType, label, overrideCompanyId = null) => {
@@ -959,6 +975,7 @@ export default function App() {
                         setSelectedProduct(prod);
                         setIsProductOpen(true);
                         emitStorefrontActivity('view_product', prod.name);
+                        postAnalytics('VIEW', prod.id ?? null);
                       }}
                       onQuickAdd={handleQuickAdd}
                     />
@@ -1032,6 +1049,7 @@ export default function App() {
         cartItems={cart}
         onUpdateQty={handleUpdateQty}
         onRemoveItem={handleRemoveItem}
+        onClearCart={() => setCart([])}
         onCheckoutInvoice={() => {
           setIsCartOpen(false);
           setCurrentView('checkout');
