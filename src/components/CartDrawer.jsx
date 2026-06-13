@@ -121,22 +121,30 @@ export default function CartDrawer({
 
                       {/* Variant tags */}
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                        {item.selectedSize && item.selectedSize !== 'One Size' && (
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-tertiary)', borderRadius: '4px', padding: '1px 6px', border: '1px solid var(--border-color)' }}>
-                            {item.selectedSize}
+                        {item.priceMode === 'perSet' ? (
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-tertiary)', borderRadius: '4px', padding: '1px 6px', border: '1px solid var(--border-color)', fontWeight: 600 }}>
+                            {item.setName || `Set of ${item.setQuantity} pcs`} (Total: {item.quantity * item.setQuantity} pcs)
                           </span>
+                        ) : (
+                          <>
+                            {item.selectedSize && item.selectedSize !== 'One Size' && (
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-tertiary)', borderRadius: '4px', padding: '1px 6px', border: '1px solid var(--border-color)' }}>
+                                {item.selectedSize}
+                              </span>
+                            )}
+                            {item.selectedColor && (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-tertiary)', borderRadius: '4px', padding: '1px 6px', border: '1px solid var(--border-color)' }}>
+                                <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: item.selectedColor.hex, flexShrink: 0, border: '1px solid rgba(0,0,0,0.1)' }} />
+                                {item.selectedColor.name}
+                              </span>
+                            )}
+                            {item.selectedOptions && Object.entries(item.selectedOptions).map(([key, val]) => (
+                              <span key={key} style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-tertiary)', borderRadius: '4px', padding: '1px 6px', border: '1px solid var(--border-color)' }}>
+                                {val}
+                              </span>
+                            ))}
+                          </>
                         )}
-                        {item.selectedColor && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-tertiary)', borderRadius: '4px', padding: '1px 6px', border: '1px solid var(--border-color)' }}>
-                            <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: item.selectedColor.hex, flexShrink: 0, border: '1px solid rgba(0,0,0,0.1)' }} />
-                            {item.selectedColor.name}
-                          </span>
-                        )}
-                        {item.selectedOptions && Object.entries(item.selectedOptions).map(([key, val]) => (
-                          <span key={key} style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-tertiary)', borderRadius: '4px', padding: '1px 6px', border: '1px solid var(--border-color)' }}>
-                            {val}
-                          </span>
-                        ))}
                       </div>
 
                       {/* Qty controls + price */}

@@ -8,7 +8,9 @@ export default function Header({
   onSearchChange,
   theme,
   storeName = 'VatiKart Store',
-  toggleTheme
+  toggleTheme,
+  hideSearch = false,
+  onBackClick = null
 }) {
   return (
     <header className="glass-nav" style={{ position: 'sticky', top: 0, width: '100%', transition: 'var(--transition-smooth)' }}>
@@ -19,6 +21,24 @@ export default function Header({
           {/* Logo & Description */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {onBackClick && (
+                <button
+                  onClick={onBackClick}
+                  className="btn btn-secondary"
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    marginRight: '8px'
+                  }}
+                >
+                  ← Back
+                </button>
+              )}
               <div style={{
                 background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
                 color: 'white',
@@ -77,7 +97,7 @@ export default function Header({
                   height: '22px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifycontent: 'center',
+                  justifyContent: 'center',
                   fontSize: '0.75rem',
                   fontWeight: 'bold',
                   border: '2px solid var(--bg-secondary)',
@@ -91,50 +111,52 @@ export default function Header({
         </div>
 
         {/* Live Search Input */}
-        <div style={{ position: 'relative', width: '100%' }}>
-          <div style={{
-            position: 'absolute',
-            left: '16px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 'var(--text-tertiary)',
-            pointerEvents: 'none',
-            display: 'flex',
-            alignItems: 'center'
-          }}>
-            <Search size={18} />
-          </div>
-          <input
-            type="text"
-            placeholder="Search items by name, category, or brand..."
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="form-input"
-            style={{
-              paddingLeft: '48px',
-              fontSize: '1rem',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1.5px solid var(--border-color)',
-              height: '48px'
-            }}
-          />
-          {searchTerm && (
-            <button
-              onClick={() => onSearchChange('')}
+        {!hideSearch && (
+          <div style={{ position: 'relative', width: '100%' }}>
+            <div style={{
+              position: 'absolute',
+              left: '16px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-tertiary)',
+              pointerEvents: 'none',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <Search size={18} />
+            </div>
+            <input
+              type="text"
+              placeholder="Search items by name, category, or brand..."
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="form-input"
               style={{
-                position: 'absolute',
-                right: '16px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--text-tertiary)',
-                fontSize: '0.85rem',
-                fontWeight: 600
+                paddingLeft: '48px',
+                fontSize: '1rem',
+                backgroundColor: 'var(--bg-tertiary)',
+                border: '1.5px solid var(--border-color)',
+                height: '48px'
               }}
-            >
-              Clear
-            </button>
-          )}
-        </div>
+            />
+            {searchTerm && (
+              <button
+                onClick={() => onSearchChange('')}
+                style={{
+                  position: 'absolute',
+                  right: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-tertiary)',
+                  fontSize: '0.85rem',
+                  fontWeight: 600
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

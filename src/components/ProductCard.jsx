@@ -197,28 +197,37 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd }) {
           <div style={{ 
             fontSize: '0.75rem', 
             color: 'var(--text-secondary)', 
-            fontWeight: 600,
+            fontWeight: 700,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             textAlign: 'right',
             flex: 1
           }}>
-            {product.sizes && product.sizes.length > 0
-              ? (product.sizes.length === 1 && product.sizes[0] === 'One Size' ? 'OS' : product.sizes.join(', '))
-              : ''
+            {product.priceMode === 'perSet'
+              ? (product.setName || `Set of ${product.setQuantity || 0} pcs`)
+              : (product.sizes && product.sizes.length > 0
+                ? (product.sizes.length === 1 && product.sizes[0] === 'One Size' ? 'OS' : product.sizes.join(', '))
+                : '')
             }
           </div>
         </div>
 
         {/* Price Tag */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: 'auto', paddingTop: '4px' }}>
-          <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
-            ₹{product.price}
-          </span>
-          {product.originalPrice > product.price && (
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>
-              ₹{product.originalPrice}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: 'auto', paddingTop: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
+              ₹{product.price}{product.priceMode === 'perSet' ? ' / Set' : ''}
+            </span>
+            {product.originalPrice > product.price && (
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>
+                ₹{product.originalPrice}{product.priceMode === 'perSet' ? ' / Set' : ''}
+              </span>
+            )}
+          </div>
+          {product.priceMode === 'perSet' && product.setQuantity && (
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              (₹{(product.price / product.setQuantity).toFixed(0)} / piece)
             </span>
           )}
         </div>

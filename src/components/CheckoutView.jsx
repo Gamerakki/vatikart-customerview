@@ -95,20 +95,40 @@ export default function CheckoutView({
     cartItems.forEach((item, index) => {
       const commentText = itemComments[index] ? ` (Note: "${itemComments[index]}")` : '';
       
-      let variantDetails = '';
-      if (item.selectedSize && item.selectedSize !== 'One Size') {
-        variantDetails += `Size: ${item.selectedSize}`;
+      if (item.priceMode === 'perSet') {
+        const packName = item.setName || `Set of ${item.setQuantity} Pieces`;
+        let compositionStr = '';
+        if (item.setComposition && item.setComposition.length > 0) {
+          compositionStr = `\n   - Set Composition:\n` + item.setComposition.map((c) => {
+            const sizeLabelStr = c.size_label || c.sizeLabel;
+            const colorLabelStr = c.color_label || c.colorLabel;
+            const qtyStr = c.qty_in_set || c.qtyInSet;
+            const totalQty = qtyStr * item.quantity;
+            return `     * ${totalQty}x ${colorLabelStr} / Size ${sizeLabelStr}`;
+          }).join('\n');
+        }
+
+        orderListText += `${index + 1}. *${item.name}*\n` +
+          `   - Pack Type: ${packName}\n` +
+          `   - Qty: ${item.quantity} ${item.quantity === 1 ? 'Set' : 'Sets'} (Total: ${item.quantity * item.setQuantity} Pieces)\n` +
+          `   - Rate: ${currencySymbol}${item.price} / Set${compositionStr}${commentText}\n` +
+          `   - Subtotal: ${currencySymbol}${(item.price * item.quantity).toFixed(2)}\n`;
+      } else {
+        let variantDetails = '';
+        if (item.selectedSize && item.selectedSize !== 'One Size') {
+          variantDetails += `Size: ${item.selectedSize}`;
+        }
+        if (item.selectedColor) {
+          variantDetails += `${variantDetails ? ', ' : ''}Color: ${item.selectedColor.name}`;
+        }
+        if (item.selectedOptions && Object.keys(item.selectedOptions).length > 0) {
+          Object.entries(item.selectedOptions).forEach(([key, val]) => {
+            variantDetails += `${variantDetails ? ', ' : ''}${key}: ${val}`;
+          });
+        }
+        const detailsStr = variantDetails ? ` (${variantDetails})` : '';
+        orderListText += `${index + 1}. *${item.name}* (Qty: ${item.quantity}${detailsStr})${commentText} - ${currencySymbol}${(item.price * item.quantity).toFixed(2)}\n`;
       }
-      if (item.selectedColor) {
-        variantDetails += `${variantDetails ? ', ' : ''}Color: ${item.selectedColor.name}`;
-      }
-      if (item.selectedOptions && Object.keys(item.selectedOptions).length > 0) {
-        Object.entries(item.selectedOptions).forEach(([key, val]) => {
-          variantDetails += `${variantDetails ? ', ' : ''}${key}: ${val}`;
-        });
-      }
-      const detailsStr = variantDetails ? ` (${variantDetails})` : '';
-      orderListText += `${index + 1}. *${item.name}* (Qty: ${item.quantity}${detailsStr})${commentText} - ${currencySymbol}${(item.price * item.quantity).toFixed(2)}\n`;
     });
 
     const msg = `*New Order from VatiKart Storefront!* 🛍️\n\n` +
@@ -287,26 +307,44 @@ export default function CheckoutView({
                     
                     {/* Variants */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      {item.selectedSize && item.selectedSize !== 'One Size' && (
-                        <span>Sizes : <strong style={{ color: 'var(--text-primary)' }}>{item.selectedSize}</strong></span>
+                      {item.priceMode === 'perSet' ? (
+                        <>
+                          <span>Pack : <strong style={{ color: 'var(--text-primary)' }}>{item.setName || `Set of ${item.setQuantity} pcs`}</strong></span>
+                          <span>Total Units : <strong style={{ color: 'var(--text-primary)' }}>{item.quantity * item.setQuantity} pieces</strong></span>
+                          {item.setComposition && item.setComposition.length > 0 && (
+                            <div style={{ paddingLeft: '8px', borderLeft: '2px solid var(--border-color)', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              {item.setComposition.map((c, idx) => (
+                                <span key={idx} style={{ fontSize: '0.75rem' }}>
+                                  • {(c.qty_in_set || c.qtyInSet) * item.quantity}x {c.color_label || c.colorLabel} / Size {c.size_label || c.sizeLabel}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {item.selectedSize && item.selectedSize !== 'One Size' && (
+                            <span>Sizes : <strong style={{ color: 'var(--text-primary)' }}>{item.selectedSize}</strong></span>
+                          )}
+                          {item.selectedColor && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              Colors : 
+                              <span style={{
+                                width: '10px',
+                                height: '10px',
+                                borderRadius: '50%',
+                                backgroundColor: item.selectedColor.hex,
+                                display: 'inline-block',
+                                border: item.selectedColor.name.toLowerCase() === 'white' ? '1px solid var(--border-color)' : 'none'
+                              }} />
+                              <strong style={{ color: 'var(--text-primary)' }}>{item.selectedColor.name}</strong>
+                            </span>
+                          )}
+                          {item.selectedOptions && Object.entries(item.selectedOptions).map(([key, val]) => (
+                            <span key={key}>{key} : <strong style={{ color: 'var(--text-primary)' }}>{val}</strong></span>
+                          ))}
+                        </>
                       )}
-                      {item.selectedColor && (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          Colors : 
-                          <span style={{
-                            width: '10px',
-                            height: '10px',
-                            borderRadius: '50%',
-                            backgroundColor: item.selectedColor.hex,
-                            display: 'inline-block',
-                            border: item.selectedColor.name.toLowerCase() === 'white' ? '1px solid var(--border-color)' : 'none'
-                          }} />
-                          <strong style={{ color: 'var(--text-primary)' }}>{item.selectedColor.name}</strong>
-                        </span>
-                      )}
-                      {item.selectedOptions && Object.entries(item.selectedOptions).map(([key, val]) => (
-                        <span key={key}>{key} : <strong style={{ color: 'var(--text-primary)' }}>{val}</strong></span>
-                      ))}
                     </div>
 
                     {/* Quantity selectors */}
@@ -318,8 +356,8 @@ export default function CheckoutView({
                         >
                           <Minus size={12} />
                         </button>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, width: '28px', textAlign: 'center', color: 'var(--text-primary)' }}>
-                          {item.quantity}
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, width: '45px', textAlign: 'center', color: 'var(--text-primary)' }}>
+                          {item.quantity} {item.priceMode === 'perSet' ? 'Sets' : ''}
                         </span>
                         <button
                           onClick={() => onUpdateQty(idx, item.quantity + 1)}

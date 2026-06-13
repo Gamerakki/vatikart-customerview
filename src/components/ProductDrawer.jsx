@@ -42,9 +42,9 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
   const handleAdd = () => {
     onAddToCart({
       ...product,
-      selectedColor,
-      selectedSize,
-      selectedOptions,
+      selectedColor: product.priceMode === 'perSet' ? null : selectedColor,
+      selectedSize: product.priceMode === 'perSet' ? null : selectedSize,
+      selectedOptions: product.priceMode === 'perSet' ? {} : selectedOptions,
       quantity
     });
     onClose();
@@ -148,24 +148,31 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
           </div>
 
           {/* Price Box */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
-            <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
-              ₹{product.price}
-            </span>
-            {product.originalPrice > product.price && (
-              <>
-                <span style={{ fontSize: '1.1rem', color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>
-                  ₹{product.originalPrice}
-                </span>
-                <span className="badge badge-danger" style={{ fontSize: '0.7rem' }}>
-                  Save ₹{product.originalPrice - product.price}
-                </span>
-              </>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+              <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
+                ₹{product.price}{product.priceMode === 'perSet' ? ' / Set' : ''}
+              </span>
+              {product.originalPrice > product.price && (
+                <>
+                  <span style={{ fontSize: '1.1rem', color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>
+                    ₹{product.originalPrice}{product.priceMode === 'perSet' ? ' / Set' : ''}
+                  </span>
+                  <span className="badge badge-danger" style={{ fontSize: '0.7rem' }}>
+                    Save ₹{product.originalPrice - product.price}
+                  </span>
+                </>
+              )}
+            </div>
+            {product.priceMode === 'perSet' && product.setQuantity && (
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                ₹{(product.price / product.setQuantity).toFixed(2)} / piece · Pack: {product.setName || `${product.setQuantity} Pieces`}
+              </span>
             )}
           </div>
 
           {/* Variant: Colors */}
-          {product.colors && product.colors.length > 0 && (
+          {product.priceMode !== 'perSet' && product.colors && product.colors.length > 0 && (
             <div>
               <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
                 Select Color: <strong style={{ color: 'var(--text-primary)' }}>{selectedColor?.name}</strong>
@@ -194,7 +201,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
           )}
 
           {/* Variant: Sizes */}
-          {product.sizes && product.sizes.length > 0 && (
+          {product.priceMode !== 'perSet' && product.sizes && product.sizes.length > 0 && (
             <div>
               <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
                 Select Size:
@@ -218,7 +225,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
           )}
 
           {/* Variant: Dynamic Options */}
-          {product.options && Object.entries(product.options).map(([optionName, values]) => {
+          {product.priceMode !== 'perSet' && product.options && Object.entries(product.options).map(([optionName, values]) => {
             if (!values || values.length === 0) return null;
             return (
               <div key={optionName}>
@@ -243,6 +250,32 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
               </div>
             );
           })}
+
+          {/* Set Composition Breakdown */}
+          {product.priceMode === 'perSet' && product.setComposition && product.setComposition.length > 0 && (
+            <div style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: '12px', padding: '16px', border: '1px solid var(--border-color)' }}>
+              <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-primary)', marginBottom: '10px' }}>
+                Set Composition Breakdown
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {product.setComposition.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.88rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {item.color_hex && (
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: item.color_hex, display: 'inline-block', border: '1px solid rgba(0,0,0,0.1)' }} />
+                      )}
+                      <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
+                        {item.color_label} / Size {item.size_label}
+                      </span>
+                    </div>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
+                      {item.qty_in_set} {item.qty_in_set === 1 ? 'pc' : 'pcs'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Description */}
           <div>
@@ -277,20 +310,29 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
             <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
               Quantity
             </span>
-            <div style={{ display: 'inline-flex', alignItems: 'center', border: '1.5px solid var(--border-color)', borderRadius: 'var(--button-radius)', overflow: 'hidden' }}>
-              <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                style={{ padding: '10px 14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Minus size={14} />
-              </button>
-              <span style={{ width: '40px', textAlign: 'center', fontWeight: 700, color: 'var(--text-primary)' }}>{quantity}</span>
-              <button
-                onClick={() => setQuantity(quantity + 1)}
-                style={{ padding: '10px 14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Plus size={14} />
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', border: '1.5px solid var(--border-color)', borderRadius: 'var(--button-radius)', overflow: 'hidden', alignSelf: 'flex-start' }}>
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  style={{ padding: '10px 14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Minus size={14} />
+                </button>
+                <span style={{ width: '80px', textAlign: 'center', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {quantity} {product.priceMode === 'perSet' ? (quantity === 1 ? 'Set' : 'Sets') : (quantity === 1 ? 'pc' : 'pcs')}
+                </span>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  style={{ padding: '10px 14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+              {product.priceMode === 'perSet' && product.setQuantity && (
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>
+                  (Total: {quantity * product.setQuantity} pieces)
+                </span>
+              )}
             </div>
           </div>
 

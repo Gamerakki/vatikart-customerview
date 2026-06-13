@@ -10,6 +10,12 @@ import CheckoutView from './components/CheckoutView';
 import { ShoppingBag } from 'lucide-react';
 
 export default function App() {
+  const [selectedCatalogueId, setSelectedCatalogueId] = useState(() => {
+    return getStoreConfig().catalogueId;
+  });
+  const [catalogues, setCatalogues] = useState([]);
+  const [companyInfo, setCompanyInfo] = useState(null);
+
   const [products, setProducts] = useState([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogNotice, setCatalogNotice] = useState(null);
@@ -29,10 +35,17 @@ export default function App() {
     (async () => {
       setCatalogLoading(true);
       try {
-        const result = await loadStoreProducts();
+        const result = await loadStoreProducts(selectedCatalogueId);
         if (cancelled) return;
         setProducts(result.products);
         setCatalogNotice(result.message);
+        setCatalogues(result.catalogues || []);
+        setCompanyInfo(result.companyInfo);
+
+        if (result.catalogueId && !selectedCatalogueId) {
+          setSelectedCatalogueId(result.catalogueId);
+        }
+
         if (result.title) {
           setStoreTitle(result.title);
         } else {
@@ -44,6 +57,8 @@ export default function App() {
         if (cancelled) return;
         if (err.type === 'REQUIRES_ACCESS') {
           setAccessError(err);
+          setCatalogues(err.catalogues || []);
+          setCompanyInfo(err.companyInfo);
         } else {
           setCatalogNotice('An error occurred while loading the storefront.');
         }
@@ -54,7 +69,8 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [accessRequestStatus]);
+  }, [accessRequestStatus, selectedCatalogueId]);
+
 
   // Cart state
   const [cart, setCart] = useState(() => {
@@ -114,18 +130,54 @@ export default function App() {
 
   // Sync state to URL search parameters
   useEffect(() => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(window.location.search);
     
-    if (selectedCategory !== 'All') params.set('category', selectedCategory);
-    if (searchTerm) params.set('search', searchTerm);
-    if (selectedSizes.length > 0) params.set('sizes', selectedSizes.join(','));
-    if (selectedColors.length > 0) params.set('colors', selectedColors.join(','));
-    if (maxPrice !== 350) params.set('price', maxPrice.toString());
-    if (sortOption !== 'popularity') params.set('sort', sortOption);
+    if (selectedCategory !== 'All') {
+      params.set('category', selectedCategory);
+    } else {
+      params.delete('category');
+    }
+    
+    if (searchTerm) {
+      params.set('search', searchTerm);
+    } else {
+      params.delete('search');
+    }
+    
+    if (selectedSizes.length > 0) {
+      params.set('sizes', selectedSizes.join(','));
+    } else {
+      params.delete('sizes');
+    }
+    
+    if (selectedColors.length > 0) {
+      params.set('colors', selectedColors.join(','));
+    } else {
+      params.delete('colors');
+    }
+    
+    if (maxPrice !== 350) {
+      params.set('price', maxPrice.toString());
+    } else {
+      params.delete('price');
+    }
+    
+    if (sortOption !== 'popularity') {
+      params.set('sort', sortOption);
+    } else {
+      params.delete('sort');
+    }
+    
+    if (selectedCatalogueId) {
+      params.set('catalogue', selectedCatalogueId.toString());
+    } else {
+      params.delete('catalogue');
+    }
 
     const newRelativePathQuery = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
     window.history.replaceState(null, '', newRelativePathQuery);
-  }, [selectedCategory, searchTerm, selectedSizes, selectedColors, maxPrice, sortOption]);
+  }, [selectedCategory, searchTerm, selectedSizes, selectedColors, maxPrice, sortOption, selectedCatalogueId]);
+
 
   const priceCeiling = useMemo(() => {
     if (products.length === 0) return 350;
@@ -411,7 +463,13 @@ export default function App() {
         theme={theme}
         storeName={storeTitle}
         toggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+        hideSearch={!selectedCatalogueId}
+        onBackClick={selectedCatalogueId && catalogues.length > 1 ? () => {
+          setSelectedCatalogueId(null);
+          setProducts([]);
+        } : null}
       />
+
 
       {catalogNotice && (
         <div style={{
@@ -526,62 +584,85 @@ export default function App() {
           `}</style>
         </main>
       ) : currentView === 'catalog' ? (
-        <main className="container main-layout" style={{ flex: 1, padding: '32px 24px', width: '100%' }}>
-          
-          {/* Sidebar Filters */}
-          <aside className="sidebar-container">
-            <FilterSidebar
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-              selectedSizes={selectedSizes}
-              onSizeToggle={handleSizeToggle}
-              selectedColors={selectedColors}
-              onColorToggle={handleColorToggle}
-              maxPrice={maxPrice}
-              onPriceChange={setMaxPrice}
-              sortOption={sortOption}
-              onSortChange={setSortOption}
-              onClearAll={handleClearAll}
-              allSizes={allSizes}
-              allColors={allColors}
-            />
-          </aside>
-          {/* Product Catalog Grid Section */}
-          <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                {selectedCategory === 'All' ? 'All Products' : selectedCategory}
-                <span style={{ fontSize: '0.95rem', color: 'var(--text-tertiary)', fontWeight: 500, marginLeft: '10px' }}>
-                  ({filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} found)
-                </span>
+        !selectedCatalogueId ? (
+          <main className="container" style={{ flex: 1, padding: '48px 24px', width: '100%' }}>
+            <div style={{ marginBottom: '40px', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                Welcome to our Store
               </h2>
-              
-              {/* Active filters pill display */}
-              {(selectedSizes.length > 0 || selectedColors.length > 0 || selectedCategory !== 'All' || searchTerm) && (
-                <button
-                  onClick={handleClearAll}
-                  style={{ fontSize: '0.825rem', color: 'var(--accent-primary)', fontWeight: 600 }}
-                >
-                  Clear all active filters
-                </button>
-              )}
+              <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
+                Browse our collections below
+              </p>
             </div>
 
-            {/* Product Cards Grid */}
-            {filteredProducts.length > 0 ? (
-              <div className="grid-auto">
-                {filteredProducts.map(product => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onViewDetails={(prod) => {
-                      setSelectedProduct(prod);
-                      setIsProductOpen(true);
-                    }}
-                    onQuickAdd={handleQuickAdd}
-                  />
-                ))}
+            {catalogues.length > 0 ? (
+              <div className="directory-grid" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '32px',
+                paddingBottom: '48px'
+              }}>
+                {catalogues.map((cat) => {
+                  const isPrivate = cat.privacy_level === 'PRIVATE';
+                  return (
+                    <div
+                      key={cat.catalogue_id}
+                      onClick={() => {
+                        setSelectedCatalogueId(cat.catalogue_id);
+                      }}
+                      style={{
+                        background: 'var(--card-bg)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '16px',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                      }}
+                      className="catalogue-card"
+                    >
+                      <div style={{ position: 'relative', height: '200px', backgroundColor: 'var(--bg-secondary)' }}>
+                        {cat.cover_image ? (
+                          <img
+                            src={cat.cover_image.startsWith('http') ? cat.cover_image : `https://cdn.vatikart.in/${cat.cover_image}`}
+                            alt={cat.title}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-tertiary)' }}>
+                            <ShoppingBag size={48} />
+                          </div>
+                        )}
+                        {isPrivate && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '12px',
+                            right: '12px',
+                            background: 'rgba(0, 0, 0, 0.75)',
+                            padding: '6px 10px',
+                            borderRadius: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            color: '#F59E0B',
+                            fontSize: '0.75rem',
+                            fontWeight: 700
+                          }}>
+                            <span style={{ fontSize: '10px' }}>🔒 PRIVATE</span>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                          {cat.title}
+                        </h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          <span>{cat.products_count} {cat.products_count === 1 ? 'product' : 'products'}</span>
+                          <span style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>Browse →</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div style={{
@@ -599,18 +680,99 @@ export default function App() {
                 <div style={{ color: 'var(--text-tertiary)' }}>
                   <ShoppingBag size={48} />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>No products found</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>No collections available</h3>
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', maxWidth: '360px' }}>
-                  We couldn't find any products matching your active filter criteria. Try relaxing your filters or resetting the search.
+                  This store has no published collections at the moment. Please check back later.
                 </p>
-                <button onClick={handleClearAll} className="btn btn-primary" style={{ marginTop: '8px' }}>
-                  Reset Filters
-                </button>
               </div>
             )}
-          </section>
+          </main>
+        ) : (
+          <main className="container main-layout" style={{ flex: 1, padding: '32px 24px', width: '100%' }}>
+            
+            {/* Sidebar Filters */}
+            <aside className="sidebar-container">
+              <FilterSidebar
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+                selectedSizes={selectedSizes}
+                onSizeToggle={handleSizeToggle}
+                selectedColors={selectedColors}
+                onColorToggle={handleColorToggle}
+                maxPrice={maxPrice}
+                onPriceChange={setMaxPrice}
+                sortOption={sortOption}
+                onSortChange={setSortOption}
+                onClearAll={handleClearAll}
+                allSizes={allSizes}
+                allColors={allColors}
+              />
+            </aside>
+            {/* Product Catalog Grid Section */}
+            <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {selectedCategory === 'All' ? 'All Products' : selectedCategory}
+                  <span style={{ fontSize: '0.95rem', color: 'var(--text-tertiary)', fontWeight: 500, marginLeft: '10px' }}>
+                    ({filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} found)
+                  </span>
+                </h2>
+                
+                {/* Active filters pill display */}
+                {(selectedSizes.length > 0 || selectedColors.length > 0 || selectedCategory !== 'All' || searchTerm) && (
+                  <button
+                    onClick={handleClearAll}
+                    style={{ fontSize: '0.825rem', color: 'var(--accent-primary)', fontWeight: 600 }}
+                  >
+                    Clear all active filters
+                  </button>
+                )}
+              </div>
 
-        </main>
+              {/* Product Cards Grid */}
+              {filteredProducts.length > 0 ? (
+                <div className="grid-auto">
+                  {filteredProducts.map(product => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onViewDetails={(prod) => {
+                        setSelectedProduct(prod);
+                        setIsProductOpen(true);
+                      }}
+                      onQuickAdd={handleQuickAdd}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '64px 0',
+                  textAlign: 'center',
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderRadius: 'var(--card-radius)',
+                  border: '1px solid var(--border-color)',
+                  gap: '16px'
+                }}>
+                  <div style={{ color: 'var(--text-tertiary)' }}>
+                    <ShoppingBag size={48} />
+                  </div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>No products found</h3>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', maxWidth: '360px' }}>
+                    We couldn't find any products matching your active filter criteria. Try relaxing your filters or resetting the search.
+                  </p>
+                  <button onClick={handleClearAll} className="btn btn-primary" style={{ marginTop: '8px' }}>
+                    Reset Filters
+                  </button>
+                </div>
+              )}
+            </section>
+          </main>
+        )
       ) : (
         <CheckoutView
           cartItems={cart}
@@ -669,6 +831,23 @@ export default function App() {
           grid-template-columns: 280px 1fr;
           gap: 32px;
         }
+        .catalogue-card {
+          background: var(--card-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 16px;
+          overflow: hidden;
+          cursor: pointer;
+          transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+        .catalogue-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 20px -10px rgba(0, 0, 0, 0.3);
+          border-color: var(--accent-primary) !important;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
         @media (max-width: 992px) {
           .main-layout {
             display: flex !important;
@@ -680,6 +859,7 @@ export default function App() {
           }
         }
       `}</style>
+
     </div>
   );
 }

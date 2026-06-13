@@ -78,6 +78,10 @@ function mapApiProduct(item, index) {
         }))
       : [{ name: 'Default', hex: '#94a3b8' }],
     options: {},
+    priceMode: item.price_mode || 'perPiece',
+    setQuantity: item.set_quantity != null ? Number(item.set_quantity) : null,
+    setName: item.set_name || null,
+    setComposition: item.set_composition || [],
   };
 }
 
@@ -132,10 +136,13 @@ async function fetchWithAuthPaths(catalogueId, apiBase, token) {
   return null;
 }
 
-export async function loadStoreProducts() {
+export async function loadStoreProducts(overrideCatalogueId = undefined) {
   const { subdomain, catalogueId: configCatalogueId, apiBase, token } = getStoreConfig();
   
-  let resolvedCatalogueId = configCatalogueId;
+  let resolvedCatalogueId = overrideCatalogueId !== undefined ? overrideCatalogueId : configCatalogueId;
+
+  let catalogues = [];
+  let companyInfo = null;
 
   if (subdomain) {
     try {
@@ -144,8 +151,21 @@ export async function loadStoreProducts() {
       });
       if (response.ok) {
         const body = await response.json();
-        if (body?.status && body.data?.catalogue_id) {
-          resolvedCatalogueId = body.data.catalogue_id;
+        if (body?.status && body.data) {
+          companyInfo = {
+            companyId: body.data.company_id,
+            companyName: body.data.company_name,
+            logoImgPath: body.data.logo_img_path,
+          };
+          catalogues = body.data.catalogues || [];
+          
+          if (!resolvedCatalogueId) {
+            if (catalogues.length === 1) {
+              resolvedCatalogueId = catalogues[0].catalogue_id;
+            } else {
+              resolvedCatalogueId = null;
+            }
+          }
         }
       }
     } catch (err) {
@@ -156,12 +176,14 @@ export async function loadStoreProducts() {
   if (!resolvedCatalogueId) {
     return {
       products: [],
-      title: null,
+      title: companyInfo?.companyName || null,
       source: 'api',
       catalogueId: null,
-      message: subdomain 
-        ? `No catalogue found for subdomain '${subdomain}'.`
-        : 'No catalogue ID specified.',
+      companyInfo,
+      catalogues,
+      message: catalogues.length === 0 
+        ? (subdomain ? `No catalogues found for '${subdomain}'.` : 'No catalogues specified.')
+        : null,
     };
   }
 
@@ -170,15 +192,19 @@ export async function loadStoreProducts() {
     if (live) {
       return {
         products: live.products,
-        title: live.title,
+        title: live.title || companyInfo?.companyName || null,
         source: 'api',
         catalogueId: resolvedCatalogueId,
+        companyInfo,
+        catalogues,
         message: live.products.length === 0 ? 'This catalogue has no products yet.' : null,
       };
     }
   } catch (err) {
     if (err.type === 'REQUIRES_ACCESS') {
       err.catalogueId = resolvedCatalogueId;
+      err.companyInfo = companyInfo;
+      err.catalogues = catalogues;
       throw err;
     }
     console.warn('[storeApi] live fetch failed', err);
@@ -186,9 +212,11 @@ export async function loadStoreProducts() {
 
   return {
     products: [],
-    title: null,
+    title: companyInfo?.companyName || null,
     source: 'api',
     catalogueId: resolvedCatalogueId,
+    companyInfo,
+    catalogues,
     message: 'Catalogue not found or unable to fetch products.',
   };
 }
