@@ -9,6 +9,20 @@ function parseCatalogueIdFromPath() {
 }
 
 export function getStoreConfig() {
+  const hostname = window.location.hostname;
+  const parts = hostname.split('.');
+  
+  let subdomain = null;
+  // If hostname has 3 parts (subdomain.domain.tld) and first part isn't www, api, or localhost
+  if (parts.length >= 3 && parts[0] !== 'www' && parts[0] !== 'api' && parts[0] !== 'localhost') {
+    subdomain = parts[0];
+  }
+  
+  // For local testing (e.g. companyname.localhost), check if it ends with .localhost and has a subdomain
+  if (hostname.endsWith('.localhost') && parts.length >= 2 && parts[0] !== 'localhost') {
+    subdomain = parts[0];
+  }
+
   const params = new URLSearchParams(window.location.search);
   const catalogueId = params.get('catalogue') || params.get('catalogue_id') || parseCatalogueIdFromPath();
   const apiBase = (params.get('api') || import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE).replace(/\/$/, '');
@@ -19,7 +33,7 @@ export function getStoreConfig() {
     localStorage.setItem('vatikart_preview_token', token);
   }
 
-  return { catalogueId, apiBase, token, storeName };
+  return { subdomain, catalogueId, apiBase, token, storeName };
 }
 
 function getFullImageUrl(path) {
@@ -119,32 +133,52 @@ async function fetchWithAuthPaths(catalogueId, apiBase, token) {
 }
 
 export async function loadStoreProducts() {
-  const { catalogueId, apiBase, token } = getStoreConfig();
+  const { subdomain, catalogueId: configCatalogueId, apiBase, token } = getStoreConfig();
+  
+  let resolvedCatalogueId = configCatalogueId;
 
-  if (!catalogueId) {
+  if (subdomain) {
+    try {
+      const response = await fetch(`${apiBase}/company/resolve-subdomain/${subdomain}`, {
+        headers: { Accept: 'application/json' }
+      });
+      if (response.ok) {
+        const body = await response.json();
+        if (body?.status && body.data?.catalogue_id) {
+          resolvedCatalogueId = body.data.catalogue_id;
+        }
+      }
+    } catch (err) {
+      console.warn('[storeApi] failed to resolve subdomain', err);
+    }
+  }
+
+  if (!resolvedCatalogueId) {
     return {
       products: [],
       title: null,
       source: 'api',
       catalogueId: null,
-      message: 'No catalogue ID specified.',
+      message: subdomain 
+        ? `No catalogue found for subdomain '${subdomain}'.`
+        : 'No catalogue ID specified.',
     };
   }
 
   try {
-    const live = await fetchWithAuthPaths(catalogueId, apiBase, token);
+    const live = await fetchWithAuthPaths(resolvedCatalogueId, apiBase, token);
     if (live) {
       return {
         products: live.products,
         title: live.title,
         source: 'api',
-        catalogueId,
+        catalogueId: resolvedCatalogueId,
         message: live.products.length === 0 ? 'This catalogue has no products yet.' : null,
       };
     }
   } catch (err) {
     if (err.type === 'REQUIRES_ACCESS') {
-      err.catalogueId = catalogueId;
+      err.catalogueId = resolvedCatalogueId;
       throw err;
     }
     console.warn('[storeApi] live fetch failed', err);
@@ -154,7 +188,7 @@ export async function loadStoreProducts() {
     products: [],
     title: null,
     source: 'api',
-    catalogueId,
+    catalogueId: resolvedCatalogueId,
     message: 'Catalogue not found or unable to fetch products.',
   };
 }
