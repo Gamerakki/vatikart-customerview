@@ -367,6 +367,12 @@ export default function App() {
     const companyId = overrideCompanyId || companyInfo?.companyId;
     if (!socketRef.current || !companyId) return;
 
+    let guestId = localStorage.getItem('vatikart_guest_id');
+    if (!guestId) {
+      guestId = 'Guest #' + Math.floor(1000 + Math.random() * 9000);
+      localStorage.setItem('vatikart_guest_id', guestId);
+    }
+
     let customerName = '';
     let customerPhone = localStorage.getItem('vatikart_customer_phone') || '';
 
@@ -388,6 +394,7 @@ export default function App() {
       timestamp: new Date().toISOString(),
       customerName,
       customerPhone,
+      guestId,
     });
   };
 
