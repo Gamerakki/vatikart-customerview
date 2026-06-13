@@ -7,7 +7,7 @@ import ProductDrawer from './components/ProductDrawer';
 import CartDrawer from './components/CartDrawer';
 import MockInvoiceModal from './components/MockInvoiceModal';
 import CheckoutView from './components/CheckoutView';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Lock } from 'lucide-react';
 
 export default function App() {
   const [selectedCatalogueId, setSelectedCatalogueId] = useState(() => {
@@ -28,6 +28,7 @@ export default function App() {
   const [accessRequestStatus, setAccessRequestStatus] = useState('idle'); // 'idle', 'submitting', 'submitted', 'approved'
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState(localStorage.getItem('vatikart_customer_phone') || '');
+  const [pendingPrivateCatalogue, setPendingPrivateCatalogue] = useState(null); // for private catalogue click-to-request flow
 
   // Theme state
   const [theme, setTheme] = useState(() => {
@@ -414,23 +415,31 @@ export default function App() {
   const handleRequestAccess = async (e) => {
     e.preventDefault();
     if (!customerName || !customerPhone) return;
+
+    // catalogueId can come from a REQUIRES_ACCESS API error OR a proactive private-click
+    const targetCatalogueId = accessError?.catalogueId || pendingPrivateCatalogue?.catalogue_id;
+    if (!targetCatalogueId) return;
     
     setAccessRequestStatus('submitting');
     try {
-      await requestAccessToCatalogue(accessError.catalogueId, customerName, customerPhone);
+      await requestAccessToCatalogue(targetCatalogueId, customerName, customerPhone);
       localStorage.setItem('vatikart_customer_phone', customerPhone);
       setAccessRequestStatus('submitted');
       
-      // Start polling for access approval
+      // Start polling for access approval (check every 5 sec)
       const interval = setInterval(async () => {
         try {
-          const result = await loadStoreProducts();
+          const result = await loadStoreProducts(targetCatalogueId);
           if (result && result.products) {
             clearInterval(interval);
-            setAccessRequestStatus('approved'); // this will trigger the useEffect to reload products
+            // Access was granted — navigate into the catalogue
+            setPendingPrivateCatalogue(null);
+            setAccessError(null);
+            setSelectedCatalogueId(targetCatalogueId);
+            setAccessRequestStatus('idle');
           }
         } catch (err) {
-          // Still waiting or rejected
+          // Still waiting or rejected, keep polling
         }
       }, 5000);
       
@@ -438,6 +447,26 @@ export default function App() {
       alert(err.message || 'Failed to request access.');
       setAccessRequestStatus('idle');
     }
+  };
+
+  // Handle clicking a catalogue card — private ones show request form immediately
+  const handleCatalogueClick = (cat) => {
+    if (cat.privacy_level === 'PRIVATE') {
+      setPendingPrivateCatalogue(cat);
+      setAccessError(null); // clear any prior API-thrown access error
+      setAccessRequestStatus('idle');
+    } else {
+      setSelectedCatalogueId(cat.catalogue_id);
+    }
+  };
+
+  // Back from access request form to catalogue grid
+  const handleBackFromAccessRequest = () => {
+    setPendingPrivateCatalogue(null);
+    setAccessError(null);
+    setAccessRequestStatus('idle');
+    setSelectedCatalogueId(null);
+    setProducts([]);
   };
 
   if (catalogLoading) {
@@ -489,7 +518,7 @@ export default function App() {
         </div>
       )}
 
-      {accessError ? (
+      {(accessError || pendingPrivateCatalogue) ? (
         <main className="container" style={{ flex: 1, padding: '48px 24px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div style={{
             background: 'var(--card-bg)',
@@ -501,10 +530,27 @@ export default function App() {
             textAlign: 'center',
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)'
           }}>
-            <ShoppingBag size={48} color="var(--accent-primary)" style={{ marginBottom: '20px' }} />
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '12px', color: 'var(--text-primary)' }}>Private Catalogue</h2>
+            {/* Lock icon */}
+            <div style={{
+              width: '72px',
+              height: '72px',
+              borderRadius: '50%',
+              background: 'rgba(245, 158, 11, 0.12)',
+              border: '2px solid rgba(245, 158, 11, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+              fontSize: '2rem'
+            }}>🔒</div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '8px', color: 'var(--text-primary)' }}>Private Catalogue</h2>
+            {(pendingPrivateCatalogue?.title || accessError?.catalogueTitle) && (
+              <p style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--accent-primary)', marginBottom: '8px' }}>
+                {pendingPrivateCatalogue?.title || accessError?.catalogueTitle}
+              </p>
+            )}
             <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '0.95rem' }}>
-              {accessError.message || 'This catalogue requires approval from the store owner to view.'}
+              {accessError?.message || 'This catalogue is private. Request access from the store owner to view its products.'}
             </p>
 
             {accessRequestStatus === 'submitted' ? (
@@ -514,7 +560,7 @@ export default function App() {
                 borderRadius: '12px',
                 border: '1px solid rgba(16, 185, 129, 0.2)'
               }}>
-                <h3 style={{ color: '#10B981', fontSize: '1.1rem', fontWeight: '700', marginBottom: '8px' }}>Request Sent!</h3>
+                <h3 style={{ color: '#10B981', fontSize: '1.1rem', fontWeight: '700', marginBottom: '8px' }}>✅ Request Sent!</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                   Please wait while the store owner reviews your request. You will automatically be granted access here once approved.
                 </p>
@@ -578,6 +624,23 @@ export default function App() {
                 >
                   {accessRequestStatus === 'submitting' ? 'Submitting...' : 'Request Access'}
                 </button>
+                {/* Back to catalogue grid */}
+                <button
+                  type="button"
+                  onClick={handleBackFromAccessRequest}
+                  style={{
+                    padding: '12px',
+                    background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    fontWeight: '600',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ← Back to all catalogues
+                </button>
               </form>
             )}
           </div>
@@ -612,9 +675,7 @@ export default function App() {
                   return (
                     <div
                       key={cat.catalogue_id}
-                      onClick={() => {
-                        setSelectedCatalogueId(cat.catalogue_id);
-                      }}
+                      onClick={() => handleCatalogueClick(cat)}
                       style={{
                         background: 'var(--card-bg)',
                         border: '1px solid var(--border-color)',
@@ -643,16 +704,20 @@ export default function App() {
                             top: '12px',
                             right: '12px',
                             background: 'rgba(0, 0, 0, 0.75)',
-                            padding: '6px 10px',
+                            backdropFilter: 'blur(6px)',
+                            padding: '5px 10px',
                             borderRadius: '20px',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px',
+                            gap: '5px',
                             color: '#F59E0B',
-                            fontSize: '0.75rem',
-                            fontWeight: 700
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            letterSpacing: '0.05em',
+                            border: '1px solid rgba(245, 158, 11, 0.35)',
                           }}>
-                            <span style={{ fontSize: '10px' }}>🔒 PRIVATE</span>
+                            <Lock size={11} strokeWidth={2.5} />
+                            PRIVATE
                           </div>
                         )}
                       </div>
@@ -662,7 +727,13 @@ export default function App() {
                         </h3>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                           <span>{cat.products_count} {cat.products_count === 1 ? 'product' : 'products'}</span>
-                          <span style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>Browse →</span>
+                          {isPrivate ? (
+                            <span style={{ color: '#F59E0B', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Lock size={12} /> Request Access
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>Browse →</span>
+                          )}
                         </div>
                       </div>
                     </div>
