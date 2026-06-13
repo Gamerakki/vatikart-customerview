@@ -9,6 +9,7 @@ export default function CheckoutView({
   onRemoveItem,
   onBackToStore,
   onConfirmOrder,
+  resellerPhone = '',
   currencySymbol = '₹',
   lang = 'en',
 }) {
@@ -174,8 +175,9 @@ export default function CheckoutView({
   };
 
   const handleChatNow = () => {
+    const phone = resellerPhone || '919876543210';
     const msg = encodeURIComponent('Hello! I have a question about the products.');
-    window.open(`https://wa.me/919876543210?text=${msg}`, '_blank');
+    window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
   };
 
   if (cartItems.length === 0) {

@@ -9,6 +9,8 @@ export default function Header({
   onSearchChange,
   theme,
   storeName = 'VatiKart Store',
+  resellerName = '',
+  resellerPhone = '',
   toggleTheme,
   hideSearch = false,
   onBackClick = null,
@@ -16,6 +18,8 @@ export default function Header({
   onLanguageChange,
   t = (key) => key,
 }) {
+  const displayName = resellerName || storeName;
+  const chatPhone = resellerPhone || '919876543210';
   return (
     <header className="glass-nav" style={{ position: 'sticky', top: 0, width: '100%', transition: 'var(--transition-smooth)' }}>
       <div className="container" style={{ display: 'flex', flexDirection: 'column', padding: '16px 24px', gap: '16px' }}>
@@ -43,19 +47,21 @@ export default function Header({
                   ← Back
                 </button>
               )}
-              <div style={{
-                background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
-                color: 'white',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                fontWeight: 800,
-                fontSize: '1.2rem',
-                letterSpacing: '0.05em',
-                boxShadow: '0 4px 10px rgba(99, 102, 241, 0.2)'
-              }}>
-                VatiKart
-              </div>
-              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{storeName}</span>
+              {!resellerName && (
+                <div style={{
+                  background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
+                  color: 'white',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontWeight: 800,
+                  fontSize: '1.2rem',
+                  letterSpacing: '0.05em',
+                  boxShadow: '0 4px 10px rgba(99, 102, 241, 0.2)'
+                }}>
+                  VatiKart
+                </div>
+              )}
+              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{displayName}</span>
             </div>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '6px', lineHeight: 1.4 }}>
               Explore our curated collection. No login needed.

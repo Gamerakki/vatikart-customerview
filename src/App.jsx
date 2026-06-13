@@ -26,6 +26,7 @@ export default function App() {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogNotice, setCatalogNotice] = useState(null);
   const [storeTitle, setStoreTitle] = useState(() => getStoreConfig().storeName);
+  const { resellerName, resellerPhone } = getStoreConfig();
   const [accessError, setAccessError] = useState(null);
   const [accessRequestStatus, setAccessRequestStatus] = useState('idle'); // 'idle', 'submitting', 'submitted', 'approved'
   const [customerName, setCustomerName] = useState('');
@@ -456,7 +457,7 @@ export default function App() {
         : '';
 
       // 2. Open WhatsApp message redirect
-      window.open(updatedWhatsappMsg ? `https://wa.me/919876543210?text=${encodeURIComponent(updatedWhatsappMsg)}` : `https://wa.me/919876543210`, '_blank');
+      window.open(updatedWhatsappMsg ? `https://wa.me/${resellerPhone || '919876543210'}?text=${encodeURIComponent(updatedWhatsappMsg)}` : `https://wa.me/${resellerPhone || '919876543210'}`, '_blank');
       
       // 3. Open printable invoice modal receipt
       setInvoiceData({
@@ -587,6 +588,8 @@ export default function App() {
         onSearchChange={setSearchTerm}
         theme={theme}
         storeName={storeTitle}
+        resellerName={resellerName}
+        resellerPhone={resellerPhone}
         toggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
         hideSearch={!selectedCatalogueId}
         lang={lang}
@@ -952,6 +955,7 @@ export default function App() {
           onRemoveItem={handleRemoveItem}
           onBackToStore={() => setCurrentView('catalog')}
           onConfirmOrder={handleConfirmCheckout}
+          resellerPhone={resellerPhone}
           currencySymbol="₹"
           lang={lang}
         />

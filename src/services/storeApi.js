@@ -30,6 +30,8 @@ export function getStoreConfig() {
   const token = params.get('token') || localStorage.getItem('vatikart_preview_token') || '';
   const storeName = params.get('store') || 'VatiKart Store';
   const margin = parseFloat(params.get('margin') || '0');
+  const resellerName = params.get('reseller_name') || '';
+  const resellerPhone = params.get('reseller_phone') || '';
 
   if (token) {
     localStorage.setItem('vatikart_preview_token', token);
@@ -43,6 +45,8 @@ export function getStoreConfig() {
     token,
     storeName,
     margin: Number.isFinite(margin) ? margin : 0,
+    resellerName,
+    resellerPhone,
   };
 }
 
