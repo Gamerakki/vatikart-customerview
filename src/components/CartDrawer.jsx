@@ -2,6 +2,50 @@ import React from 'react';
 import { X, Plus, Minus, Trash2, ShoppingCart, ArrowRight } from 'lucide-react';
 import { getEffectivePrice, getProductGstAmount } from '../services/pricing';
 
+function getNextBulkDiscount(item) {
+  if (!item.bulkDiscounts || item.bulkDiscounts.length === 0) {
+    return null;
+  }
+
+  const quantity = Number(item.quantity) || 0;
+  const slabs = [...item.bulkDiscounts]
+    .map((slab) => ({
+      ...slab,
+      minQty: Number(slab.min_qty) || 0,
+      maxQty: slab.max_qty != null ? Number(slab.max_qty) : null,
+    }))
+    .filter((slab) => slab.minQty > 0)
+    .sort((a, b) => a.minQty - b.minQty);
+
+  return slabs.find((slab) => quantity < slab.minQty) || null;
+}
+
+function getSlabTargetPrice(item, slab) {
+  if (!slab) {
+    return 0;
+  }
+
+  if (slab.discounted_price != null) {
+    return Number(slab.discounted_price) || 0;
+  }
+
+  if (slab.discount_percent != null) {
+    return (Number(item.price) || 0) * (1 - Number(slab.discount_percent) / 100);
+  }
+
+  return Number(item.price) || 0;
+}
+
+function getSlabUnitLabel(item) {
+  if (item.priceMode === 'perSet') {
+    return '/set';
+  }
+  if (item.selectedSizeOption?.isSet) {
+    return '/pack';
+  }
+  return item.unitType ? `/${item.unitType}` : '/pc';
+}
+
 export default function CartDrawer({
   isOpen,
   onClose,
@@ -100,6 +144,14 @@ export default function CartDrawer({
               {/* Product list */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {cartItems.map((item, idx) => (
+                  (() => {
+                    const nextSlab = getNextBulkDiscount(item);
+                    const slabTarget = nextSlab?.minQty || 0;
+                    const progressValue = slabTarget > 0 ? Math.min((item.quantity / slabTarget) * 100, 100) : 0;
+                    const itemsLeft = slabTarget > 0 ? Math.max(slabTarget - item.quantity, 0) : 0;
+                    const targetPrice = nextSlab ? getSlabTargetPrice(item, nextSlab) : 0;
+
+                    return (
                   <div
                     key={idx}
                     style={{
@@ -179,6 +231,28 @@ export default function CartDrawer({
                           ₹{(getEffectivePrice(item, item.quantity) * item.quantity).toFixed(2)}
                         </span>
                       </div>
+
+                      {nextSlab && (
+                        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                            <span>{item.quantity} / {slabTarget} items</span>
+                            <span>Next slab</span>
+                          </div>
+                          <div style={{ width: '100%', height: '8px', borderRadius: '999px', backgroundColor: 'var(--bg-tertiary)', overflow: 'hidden' }}>
+                            <div
+                              style={{
+                                width: `${progressValue}%`,
+                                height: '100%',
+                                borderRadius: '999px',
+                                background: 'linear-gradient(90deg, var(--accent-primary), #34d399)'
+                              }}
+                            />
+                          </div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start', padding: '6px 10px', borderRadius: '999px', backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#047857', fontSize: '0.72rem', fontWeight: 800, border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                            Add {itemsLeft} more to get wholesale price of ₹{targetPrice.toFixed(2)}{getSlabUnitLabel(item)}!
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Delete button */}
@@ -197,6 +271,8 @@ export default function CartDrawer({
                       <Trash2 size={14} />
                     </button>
                   </div>
+                    );
+                  })()
                 ))}
               </div>
             </>

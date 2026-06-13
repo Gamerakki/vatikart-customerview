@@ -25,6 +25,7 @@ export function getStoreConfig() {
 
   const params = new URLSearchParams(window.location.search);
   const catalogueId = params.get('catalogue') || params.get('catalogue_id') || parseCatalogueIdFromPath();
+  const selectedIds = params.get('ids') ? params.get('ids').split(',').map(Number).filter(Number.isFinite) : [];
   const apiBase = (params.get('api') || import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE).replace(/\/$/, '');
   const token = params.get('token') || localStorage.getItem('vatikart_preview_token') || '';
   const storeName = params.get('store') || 'VatiKart Store';
@@ -34,7 +35,15 @@ export function getStoreConfig() {
     localStorage.setItem('vatikart_preview_token', token);
   }
 
-  return { subdomain, catalogueId, apiBase, token, storeName, margin: Number.isFinite(margin) ? margin : 0 };
+  return {
+    subdomain,
+    catalogueId,
+    selectedIds,
+    apiBase,
+    token,
+    storeName,
+    margin: Number.isFinite(margin) ? margin : 0,
+  };
 }
 
 function getFullImageUrl(path) {
@@ -161,7 +170,7 @@ async function fetchWithAuthPaths(catalogueId, apiBase, token, margin = 0) {
 }
 
 export async function loadStoreProducts(overrideCatalogueId = undefined) {
-  const { subdomain, catalogueId: configCatalogueId, apiBase, token, margin } = getStoreConfig();
+  const { subdomain, catalogueId: configCatalogueId, selectedIds, apiBase, token, margin } = getStoreConfig();
   
   let resolvedCatalogueId = overrideCatalogueId !== undefined ? overrideCatalogueId : configCatalogueId;
 
@@ -214,14 +223,18 @@ export async function loadStoreProducts(overrideCatalogueId = undefined) {
   try {
     const live = await fetchWithAuthPaths(resolvedCatalogueId, apiBase, token, margin);
     if (live) {
+      const products = selectedIds.length > 0
+        ? live.products.filter((product) => selectedIds.includes(Number(product.id)))
+        : live.products;
+
       return {
-        products: live.products,
+        products,
         title: live.title || companyInfo?.companyName || null,
         source: 'api',
         catalogueId: resolvedCatalogueId,
         companyInfo,
         catalogues,
-        message: live.products.length === 0 ? 'This catalogue has no products yet.' : null,
+        message: products.length === 0 ? 'This catalogue has no products yet.' : null,
       };
     }
   } catch (err) {
