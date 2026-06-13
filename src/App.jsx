@@ -449,9 +449,27 @@ export default function App() {
     }
   };
 
-  // Handle clicking a catalogue card — private ones show request form immediately
-  const handleCatalogueClick = (cat) => {
+  // Handle clicking a catalogue card — private ones show request form immediately if access not granted
+  const handleCatalogueClick = async (cat) => {
     if (cat.privacy_level === 'PRIVATE') {
+      const savedPhone = localStorage.getItem('vatikart_customer_phone');
+      if (savedPhone) {
+        setCatalogLoading(true);
+        try {
+          const result = await loadStoreProducts(cat.catalogue_id);
+          if (result && result.products) {
+            setProducts(result.products);
+            setCatalogNotice(result.message);
+            setSelectedCatalogueId(cat.catalogue_id);
+            setCatalogLoading(false);
+            return;
+          }
+        } catch (err) {
+          // Access not yet granted or expired, fall through to show request form
+        }
+        setCatalogLoading(false);
+      }
+
       setPendingPrivateCatalogue(cat);
       setAccessError(null); // clear any prior API-thrown access error
       setAccessRequestStatus('idle');
