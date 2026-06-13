@@ -13,8 +13,12 @@ export default function App() {
   const [selectedCatalogueId, setSelectedCatalogueId] = useState(() => {
     return getStoreConfig().catalogueId;
   });
+  const [isDirectLink] = useState(() => {
+    return !!getStoreConfig().catalogueId;
+  });
   const [catalogues, setCatalogues] = useState([]);
   const [companyInfo, setCompanyInfo] = useState(null);
+
 
   const [products, setProducts] = useState([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
@@ -464,10 +468,11 @@ export default function App() {
         storeName={storeTitle}
         toggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
         hideSearch={!selectedCatalogueId}
-        onBackClick={selectedCatalogueId && catalogues.length > 1 ? () => {
+        onBackClick={!isDirectLink && selectedCatalogueId && catalogues.length > 1 ? () => {
           setSelectedCatalogueId(null);
           setProducts([]);
         } : null}
+
       />
 
 
