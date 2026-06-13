@@ -28,12 +28,13 @@ export function getStoreConfig() {
   const apiBase = (params.get('api') || import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE).replace(/\/$/, '');
   const token = params.get('token') || localStorage.getItem('vatikart_preview_token') || '';
   const storeName = params.get('store') || 'VatiKart Store';
+  const margin = parseFloat(params.get('margin') || '0');
 
   if (token) {
     localStorage.setItem('vatikart_preview_token', token);
   }
 
-  return { subdomain, catalogueId, apiBase, token, storeName };
+  return { subdomain, catalogueId, apiBase, token, storeName, margin: Number.isFinite(margin) ? margin : 0 };
 }
 
 function getFullImageUrl(path) {
@@ -44,8 +45,12 @@ function getFullImageUrl(path) {
   return `https://cdn.vatikart.in/${path}`;
 }
 
-function mapApiProduct(item, index) {
-  const price = Number(item.price) || 0;
+function mapApiProduct(item, index, margin = 0) {
+  const basePrice = Number(item.price) || 0;
+  const baseOriginalPrice = item.original_price != null ? Number(item.original_price) : basePrice;
+  const multiplier = margin > 0 ? (1 + margin / 100) : 1;
+  const price = Number((basePrice * multiplier).toFixed(2));
+  const originalPrice = Number((baseOriginalPrice * multiplier).toFixed(2));
   const title = item.product || item.title || `Product ${index + 1}`;
   const category = item.category || item.slug || 'General';
 
@@ -54,7 +59,7 @@ function mapApiProduct(item, index) {
     name: title,
     category,
     price,
-    originalPrice: item.original_price != null ? Number(item.original_price) : price,
+    originalPrice: originalPrice,
     gstRate: item.gst_rate != null ? Number(item.gst_rate) : 0,
     unitType: item.unit_type || null,
     minimumOrderQty: item.minimum_order_qty != null ? Number(item.minimum_order_qty) : 1,
@@ -106,7 +111,7 @@ async function tryFetchJson(url, options = {}) {
   return body;
 }
 
-async function fetchWithAuthPaths(catalogueId, apiBase, token) {
+async function fetchWithAuthPaths(catalogueId, apiBase, token, margin = 0) {
   const phone = localStorage.getItem('vatikart_customer_phone');
   const headers = {
     Accept: 'application/json',
@@ -125,13 +130,13 @@ async function fetchWithAuthPaths(catalogueId, apiBase, token) {
     const body = await tryFetchJson(`${apiBase}${path}`, { headers });
     if (body?.status && Array.isArray(body.data)) {
       return {
-        products: body.data.map(mapApiProduct),
+        products: body.data.map((item, index) => mapApiProduct(item, index, margin)),
         title: body.title || null
       };
     }
     if (Array.isArray(body)) {
       return {
-        products: body.map(mapApiProduct),
+        products: body.map((item, index) => mapApiProduct(item, index, margin)),
         title: null
       };
     }
@@ -141,7 +146,7 @@ async function fetchWithAuthPaths(catalogueId, apiBase, token) {
 }
 
 export async function loadStoreProducts(overrideCatalogueId = undefined) {
-  const { subdomain, catalogueId: configCatalogueId, apiBase, token } = getStoreConfig();
+  const { subdomain, catalogueId: configCatalogueId, apiBase, token, margin } = getStoreConfig();
   
   let resolvedCatalogueId = overrideCatalogueId !== undefined ? overrideCatalogueId : configCatalogueId;
 
@@ -192,7 +197,7 @@ export async function loadStoreProducts(overrideCatalogueId = undefined) {
   }
 
   try {
-    const live = await fetchWithAuthPaths(resolvedCatalogueId, apiBase, token);
+    const live = await fetchWithAuthPaths(resolvedCatalogueId, apiBase, token, margin);
     if (live) {
       return {
         products: live.products,
@@ -243,7 +248,7 @@ export async function requestAccessToCatalogue(catalogueId, customerName, custom
 }
 
 export async function bookPublicOrder(checkoutDetails) {
-  const { catalogueId, apiBase } = getStoreConfig();
+  const { catalogueId, apiBase, margin } = getStoreConfig();
   
   const payload = {
     catalogue_id: isNaN(parseInt(catalogueId, 10)) ? catalogueId : parseInt(catalogueId, 10),
@@ -262,6 +267,7 @@ export async function bookPublicOrder(checkoutDetails) {
     shipping: 0,
     tax: Number(checkoutDetails.tax),
     total: Number(checkoutDetails.total),
+    reseller_markup: Number(margin || 0),
   };
 
   const response = await fetch(`${apiBase}/order/public/book`, {

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, MessageCircle, Percent, Plus, Minus } from 'lucide-react';
 import { getEffectivePrice } from '../services/pricing';
+import { translations } from '../utils/i18n';
 
 export default function CheckoutView({
   cartItems,
@@ -9,7 +10,9 @@ export default function CheckoutView({
   onBackToStore,
   onConfirmOrder,
   currencySymbol = '₹',
+  lang = 'en',
 }) {
+  const t = (key) => translations[lang]?.[key] || translations.en[key] || key;
   const [customer, setCustomer] = useState(() => {
     const saved = localStorage.getItem('vatikart_customer');
     return saved ? JSON.parse(saved) : { name: '', phone: '', address: '' };
@@ -181,7 +184,7 @@ export default function CheckoutView({
         <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>
           <ArrowLeft size={36} />
         </div>
-        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)' }}>Your cart is empty</h2>
+        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)' }}>{t('cart_empty')}</h2>
         <p style={{ color: 'var(--text-secondary)', textAlign: 'center', maxWidth: '360px' }}>
           Add some products from the catalog to proceed with checkout.
         </p>
@@ -199,8 +202,8 @@ export default function CheckoutView({
           <ArrowLeft size={18} />
         </button>
         <div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Shopping Cart</span>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)' }}>Checkout</h2>
+          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('shopping_cart')}</span>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)' }}>{t('checkout')}</h2>
         </div>
       </div>
 
@@ -211,12 +214,12 @@ export default function CheckoutView({
 
       <div className="glass-card" style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>Have a question?</h4>
-          <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', marginTop: '2px' }}>Chat with us directly on WhatsApp</p>
+          <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>{t('have_question')}</h4>
+          <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{t('chat_whatsapp')}</p>
         </div>
         <button onClick={handleChatNow} className="btn btn-secondary" style={{ backgroundColor: '#e8f7ed', color: '#25D366', borderColor: '#ccefd8', fontSize: '0.85rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
           <MessageCircle size={16} fill="#25D366" color="white" />
-          CHAT NOW
+          {t('chat_now').toUpperCase()}
         </button>
       </div>
 
@@ -303,7 +306,7 @@ export default function CheckoutView({
 
                 {belowMoq && (
                   <div style={{ padding: '10px 12px', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', fontSize: '0.78rem', fontWeight: 700 }}>
-                    Minimum order quantity for this item is {minimumOrderQty}. Please increase the quantity to continue.
+                    {t('min_order_warning').replace('{qty}', String(minimumOrderQty))}
                   </div>
                 )}
 
@@ -347,19 +350,19 @@ export default function CheckoutView({
       </div>
 
       <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>Delivery details</h3>
+        <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>{t('delivery_details')}</h3>
         <div className="form-group" style={{ marginBottom: '8px' }}>
-          <label className="form-label" style={{ fontSize: '0.8rem' }}>Full Name *</label>
+          <label className="form-label" style={{ fontSize: '0.8rem' }}>{t('full_name')} *</label>
           <input type="text" name="name" value={customer.name} onChange={handleCustomerChange} placeholder="Enter your name" className="form-input" style={{ padding: '10px 14px', fontSize: '0.85rem' }} />
           {formErrors.name && <span style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>{formErrors.name}</span>}
         </div>
         <div className="form-group" style={{ marginBottom: '8px' }}>
-          <label className="form-label" style={{ fontSize: '0.8rem' }}>Phone Number *</label>
+          <label className="form-label" style={{ fontSize: '0.8rem' }}>{t('phone_number')} *</label>
           <input type="text" name="phone" value={customer.phone} onChange={handleCustomerChange} placeholder="e.g. +91 98765 43210" className="form-input" style={{ padding: '10px 14px', fontSize: '0.85rem' }} />
           {formErrors.phone && <span style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>{formErrors.phone}</span>}
         </div>
         <div className="form-group" style={{ marginBottom: '0' }}>
-          <label className="form-label" style={{ fontSize: '0.8rem' }}>Delivery Address *</label>
+          <label className="form-label" style={{ fontSize: '0.8rem' }}>{t('delivery_address')} *</label>
           <textarea name="address" value={customer.address} onChange={handleCustomerChange} placeholder="Street, City, Zip Code" className="form-input" rows="2" style={{ padding: '10px 14px', fontSize: '0.85rem', resize: 'vertical', fontFamily: 'inherit' }} />
           {formErrors.address && <span style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>{formErrors.address}</span>}
         </div>
@@ -367,7 +370,7 @@ export default function CheckoutView({
 
       <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.925rem', color: 'var(--text-secondary)' }}>
-          <span>Sub total</span>
+          <span>{t('subtotal')}</span>
           <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{currencySymbol}{subtotal.toFixed(2)}</span>
         </div>
         {totalSavings > 0 && (
@@ -388,7 +391,7 @@ export default function CheckoutView({
         </div>
         <hr style={{ border: 0, borderTop: '1px solid var(--border-color)', margin: '4px 0' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-          <span>Total</span>
+          <span>{t('total')}</span>
           <span style={{ color: 'var(--accent-primary)', fontSize: '1.25rem' }}>{currencySymbol}{totalAmount.toFixed(2)}</span>
         </div>
       </div>
@@ -400,7 +403,7 @@ export default function CheckoutView({
           disabled={hasMoqViolation}
           style={{ width: '100%', maxWidth: '700px', height: '50px', fontSize: '1rem', fontWeight: 800, borderRadius: '12px', backgroundColor: '#000000', backgroundImage: 'none', color: '#ffffff', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px', transition: 'var(--transition-smooth)', opacity: hasMoqViolation ? 0.55 : 1, cursor: hasMoqViolation ? 'not-allowed' : 'pointer' }}
         >
-          <span style={{ letterSpacing: '0.03em' }}>CONFIRM ORDER</span>
+          <span style={{ letterSpacing: '0.03em' }}>{t('confirm_order').toUpperCase()}</span>
           <span>→</span>
         </button>
       </div>

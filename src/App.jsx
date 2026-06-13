@@ -9,6 +9,7 @@ import MockInvoiceModal from './components/MockInvoiceModal';
 import CheckoutView from './components/CheckoutView';
 import { ShoppingBag, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { translations } from './utils/i18n';
 
 export default function App() {
   const [selectedCatalogueId, setSelectedCatalogueId] = useState(() => {
@@ -31,6 +32,7 @@ export default function App() {
   const [customerPhone, setCustomerPhone] = useState(localStorage.getItem('vatikart_customer_phone') || '');
   const [pendingPrivateCatalogue, setPendingPrivateCatalogue] = useState(null); // for private catalogue click-to-request flow
   const socketRef = useRef(null);
+  const [lang, setLang] = useState(() => localStorage.getItem('vatikart_lang') || 'en');
 
   // Theme state
   const [theme, setTheme] = useState(() => {
@@ -106,6 +108,29 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('vatikart_theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    const onLanguageEvent = (event) => {
+      const nextLang = event?.detail || localStorage.getItem('vatikart_lang') || 'en';
+      setLang(nextLang);
+    };
+
+    const onStorage = (event) => {
+      if (event.key === 'vatikart_lang' && event.newValue) {
+        setLang(event.newValue);
+      }
+    };
+
+    window.addEventListener('vatikart_language_change', onLanguageEvent);
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      window.removeEventListener('vatikart_language_change', onLanguageEvent);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
+
+  const t = (key) => translations[lang]?.[key] || translations.en[key] || key;
 
   useEffect(() => {
     const socketBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.vatikart.in';
@@ -540,6 +565,9 @@ export default function App() {
         storeName={storeTitle}
         toggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
         hideSearch={!selectedCatalogueId}
+        lang={lang}
+        onLanguageChange={setLang}
+        t={t}
         onBackClick={!isDirectLink && selectedCatalogueId && catalogues.length > 1 ? () => {
           setSelectedCatalogueId(null);
           setProducts([]);
@@ -901,6 +929,7 @@ export default function App() {
           onBackToStore={() => setCurrentView('catalog')}
           onConfirmOrder={handleConfirmCheckout}
           currencySymbol="₹"
+          lang={lang}
         />
       )}
 

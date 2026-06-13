@@ -1,5 +1,6 @@
 import React from 'react';
 import { Search, ShoppingCart, Moon, Sun } from 'lucide-react';
+import { languageOptions } from '../utils/i18n';
 
 export default function Header({
   cartCount,
@@ -10,7 +11,10 @@ export default function Header({
   storeName = 'VatiKart Store',
   toggleTheme,
   hideSearch = false,
-  onBackClick = null
+  onBackClick = null,
+  lang = 'en',
+  onLanguageChange,
+  t = (key) => key,
 }) {
   return (
     <header className="glass-nav" style={{ position: 'sticky', top: 0, width: '100%', transition: 'var(--transition-smooth)' }}>
@@ -60,6 +64,34 @@ export default function Header({
 
           {/* Actions: Theme, Cart */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {languageOptions.map((option) => (
+                <button
+                  key={option.code}
+                  type="button"
+                  onClick={() => {
+                    localStorage.setItem('vatikart_lang', option.code);
+                    window.dispatchEvent(new CustomEvent('vatikart_language_change', { detail: option.code }));
+                    if (onLanguageChange) {
+                      onLanguageChange(option.code);
+                    }
+                  }}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: '999px',
+                    border: '1px solid var(--border-color)',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.03em',
+                    color: lang === option.code ? '#ffffff' : 'var(--text-secondary)',
+                    backgroundColor: lang === option.code ? 'var(--accent-primary)' : 'var(--bg-tertiary)'
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -84,7 +116,7 @@ export default function Header({
               }}
             >
               <ShoppingCart size={18} />
-              <span style={{ fontWeight: 600 }}>Cart</span>
+              <span style={{ fontWeight: 600 }}>{t('shopping_cart')}</span>
               {cartCount > 0 && (
                 <div style={{
                   position: 'absolute',
