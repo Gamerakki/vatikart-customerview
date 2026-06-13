@@ -53,6 +53,20 @@ function mapApiProduct(item, index, margin = 0) {
   const originalPrice = Number((baseOriginalPrice * multiplier).toFixed(2));
   const title = item.product || item.title || `Product ${index + 1}`;
   const category = item.category || item.slug || 'General';
+  const sizeOptions = item.sizes?.length
+    ? item.sizes.map((size) =>
+        typeof size === 'string'
+          ? { label: size, isSet: false, setQuantity: 1 }
+          : {
+              label: size.label,
+              optionId: size.option_id,
+              accent: size.accent || null,
+              isSet: Boolean(size.is_set),
+              setQuantity: Number(size.set_quantity || 1),
+              sortOrder: size.sort_order ?? 0,
+            }
+      )
+    : [{ label: 'One Size', isSet: false, setQuantity: 1 }];
 
   return {
     id: item.product_id ?? item.id ?? index + 1,
@@ -77,13 +91,14 @@ function mapApiProduct(item, index, margin = 0) {
       : [
           getFullImageUrl(item.img_path) || getFullImageUrl(item.imageUri) || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop&q=60'
         ],
-    sizes: item.sizes?.length
-      ? item.sizes.map((s) => (typeof s === 'string' ? s : s.label))
-      : ['One Size'],
+    sizeOptions,
+    sizes: sizeOptions.map((size) => size.label),
     colors: item.colors?.length
       ? item.colors.map((c) => ({
           name: c.name || c.label || 'Default',
           hex: c.hex || c.accent || '#94a3b8',
+          isSet: Boolean(c.is_set),
+          setQuantity: Number(c.set_quantity || 1),
         }))
       : [{ name: 'Default', hex: '#94a3b8' }],
     options: {},

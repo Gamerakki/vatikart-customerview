@@ -5,8 +5,14 @@ import { getEffectivePrice } from '../services/pricing';
 export default function ProductDrawer({ isOpen, onClose, product, onAddToCart }) {
   if (!product) return null;
 
+  const sizeOptions = product.sizeOptions && product.sizeOptions.length > 0
+    ? product.sizeOptions
+    : (product.sizes && product.sizes.length > 0
+      ? product.sizes.map((size) => ({ label: size, isSet: false, setQuantity: 1 }))
+      : []);
+
   const [selectedColor, setSelectedColor] = useState(product.colors && product.colors.length > 0 ? product.colors[0] : null);
-  const [selectedSize, setSelectedSize] = useState(product.sizes && product.sizes.length > 0 ? product.sizes[0] : null);
+  const [selectedSize, setSelectedSize] = useState(sizeOptions.length > 0 ? sizeOptions[0] : null);
   const [selectedOptions, setSelectedOptions] = useState(() => {
     const initial = {};
     if (product.options) {
@@ -31,7 +37,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
   // Sync state when product changes
   useEffect(() => {
     setSelectedColor(product.colors && product.colors.length > 0 ? product.colors[0] : null);
-    setSelectedSize(product.sizes && product.sizes.length > 0 ? product.sizes[0] : null);
+    setSelectedSize(sizeOptions.length > 0 ? sizeOptions[0] : null);
     
     const initialOptions = {};
     if (product.options) {
@@ -47,6 +53,19 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
     setMatrixQuantities({});
     setActiveImage(product.image);
   }, [product]);
+
+  const selectedSetQuantity = product.priceMode !== 'perSet' && selectedSize?.isSet
+    ? Math.max(1, Number(selectedSize.setQuantity || 1))
+    : 1;
+  const displayPrice = Number((Number(product.price || 0) * selectedSetQuantity).toFixed(2));
+  const displayOriginalPrice = Number((Number(product.originalPrice || product.price || 0) * selectedSetQuantity).toFixed(2));
+  const selectedPriceProduct = selectedSetQuantity > 1
+    ? {
+        ...product,
+        price: displayPrice,
+        originalPrice: displayOriginalPrice,
+      }
+    : product;
 
   const isB2BMatrix = product.priceMode !== 'perSet' && product.colors && product.colors.length > 0 && product.sizes && product.sizes.length > 0;
 
@@ -79,14 +98,18 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
 
   const handleAddBulk = () => {
     product.colors.forEach(color => {
-      product.sizes.forEach(size => {
-        const qty = matrixQuantities[`${color.name}_${size}`] || 0;
+      sizeOptions.forEach(size => {
+        const qty = matrixQuantities[`${color.name}_${size.label}`] || 0;
         if (qty > 0) {
           onAddToCart({
             ...product,
             selectedColor: color,
-            selectedSize: size,
+            selectedSize: size.label,
+            selectedSizeOption: size,
+            selectedSetQuantity: size.isSet ? Math.max(1, Number(size.setQuantity || 1)) : 1,
             selectedOptions: {},
+            price: size.isSet ? Number((Number(product.price || 0) * Math.max(1, Number(size.setQuantity || 1))).toFixed(2)) : product.price,
+            originalPrice: size.isSet ? Number((Number(product.originalPrice || product.price || 0) * Math.max(1, Number(size.setQuantity || 1))).toFixed(2)) : product.originalPrice,
             quantity: qty
           });
         }
@@ -100,10 +123,10 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
     const unitName = product.unitType || 'piece';
     product.colors.forEach(color => {
       const sizeList = [];
-      product.sizes.forEach(size => {
-        const qty = matrixQuantities[`${color.name}_${size}`] || 0;
+      sizeOptions.forEach(size => {
+        const qty = matrixQuantities[`${color.name}_${size.label}`] || 0;
         if (qty > 0) {
-          sizeList.push(`${qty} ${size}`);
+          sizeList.push(`${qty} ${size.label}`);
         }
       });
       if (sizeList.length > 0) {
@@ -133,8 +156,8 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
             <thead>
               <tr>
                 <th>Colors</th>
-                {product.sizes.map(size => (
-                  <th key={size} style={{ textAlign: 'center' }}>{size}</th>
+                {sizeOptions.map(size => (
+                  <th key={size.label} style={{ textAlign: 'center' }}>{size.label}</th>
                 ))}
               </tr>
             </thead>
@@ -147,16 +170,16 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
                       <span>{color.name}</span>
                     </div>
                   </td>
-                  {product.sizes.map(size => {
-                    const cellKey = `${color.name}_${size}`;
+                  {sizeOptions.map(size => {
+                    const cellKey = `${color.name}_${size.label}`;
                     const qty = matrixQuantities[cellKey] || 0;
                     return (
-                      <td key={size} style={{ textAlign: 'center' }}>
+                      <td key={size.label} style={{ textAlign: 'center' }}>
                         <div className="b2b-matrix-stepper" style={{ margin: '0 auto' }}>
                           <button
                             type="button"
                             className="b2b-matrix-stepper-btn"
-                            onClick={() => handleDecrement(color.name, size)}
+                            onClick={() => handleDecrement(color.name, size.label)}
                           >
                             <Minus size={10} />
                           </button>
@@ -164,12 +187,12 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
                             type="text"
                             className="b2b-matrix-stepper-input"
                             value={qty || 0}
-                            onChange={(e) => handleCellChange(color.name, size, e.target.value)}
+                            onChange={(e) => handleCellChange(color.name, size.label, e.target.value)}
                           />
                           <button
                             type="button"
                             className="b2b-matrix-stepper-btn"
-                            onClick={() => handleIncrement(color.name, size)}
+                            onClick={() => handleIncrement(color.name, size.label)}
                           >
                             <Plus size={10} />
                           </button>
@@ -192,17 +215,17 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
                 <span>{color.name}</span>
               </div>
               <div className="b2b-matrix-sizes-grid">
-                {product.sizes.map(size => {
-                  const cellKey = `${color.name}_${size}`;
+                {sizeOptions.map(size => {
+                  const cellKey = `${color.name}_${size.label}`;
                   const qty = matrixQuantities[cellKey] || 0;
                   return (
-                    <div key={size} className="b2b-matrix-size-row">
-                      <span className="b2b-matrix-size-label">{size}</span>
+                    <div key={size.label} className="b2b-matrix-size-row">
+                      <span className="b2b-matrix-size-label">{size.label}</span>
                       <div className="b2b-matrix-stepper">
                         <button
                           type="button"
                           className="b2b-matrix-stepper-btn"
-                          onClick={() => handleDecrement(color.name, size)}
+                          onClick={() => handleDecrement(color.name, size.label)}
                         >
                           <Minus size={10} />
                         </button>
@@ -210,12 +233,12 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
                           type="text"
                           className="b2b-matrix-stepper-input"
                           value={qty || 0}
-                          onChange={(e) => handleCellChange(color.name, size, e.target.value)}
+                          onChange={(e) => handleCellChange(color.name, size.label, e.target.value)}
                         />
                         <button
                           type="button"
                           className="b2b-matrix-stepper-btn"
-                          onClick={() => handleIncrement(color.name, size)}
+                          onClick={() => handleIncrement(color.name, size.label)}
                         >
                           <Plus size={10} />
                         </button>
@@ -278,9 +301,11 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
 
   const handleAdd = () => {
     onAddToCart({
-      ...product,
+      ...selectedPriceProduct,
       selectedColor: product.priceMode === 'perSet' ? null : selectedColor,
-      selectedSize: product.priceMode === 'perSet' ? null : selectedSize,
+      selectedSize: product.priceMode === 'perSet' ? null : selectedSize?.label,
+      selectedSizeOption: product.priceMode === 'perSet' ? null : selectedSize,
+      selectedSetQuantity: product.priceMode === 'perSet' ? (product.setQuantity || 1) : selectedSetQuantity,
       selectedOptions: product.priceMode === 'perSet' ? {} : selectedOptions,
       quantity
     });
@@ -388,15 +413,15 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
               <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
-                ₹{product.price} / {product.priceMode === 'perSet' ? 'Set' : (product.unitType || 'piece')}
+                ₹{displayPrice} / {product.priceMode === 'perSet' ? 'Set' : (selectedSize?.isSet ? 'Pack' : (product.unitType || 'piece'))}
               </span>
-              {product.originalPrice > product.price && (
+              {displayOriginalPrice > displayPrice && (
                 <>
                   <span style={{ fontSize: '1.1rem', color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>
-                    ₹{product.originalPrice} / {product.priceMode === 'perSet' ? 'Set' : (product.unitType || 'piece')}
+                    ₹{displayOriginalPrice} / {product.priceMode === 'perSet' ? 'Set' : (selectedSize?.isSet ? 'Pack' : (product.unitType || 'piece'))}
                   </span>
                   <span className="badge badge-danger" style={{ fontSize: '0.7rem' }}>
-                    Save ₹{product.originalPrice - product.price}
+                    Save ₹{(displayOriginalPrice - displayPrice).toFixed(2)}
                   </span>
                 </>
               )}
@@ -404,6 +429,11 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
             {product.priceMode === 'perSet' && product.setQuantity && (
               <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                 ₹{(product.price / product.setQuantity).toFixed(2)} / piece · Pack: {product.setName || `${product.setQuantity} Pieces`}
+              </span>
+            )}
+            {product.priceMode !== 'perSet' && selectedSize?.isSet && (
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                Pack of {selectedSetQuantity} · ₹{Number(product.price || 0).toFixed(2)} / piece
               </span>
             )}
           </div>
@@ -438,22 +468,22 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
           )}
 
           {/* Variant: Sizes */}
-          {!isB2BMatrix && product.priceMode !== 'perSet' && product.sizes && product.sizes.length > 0 && (
+          {!isB2BMatrix && product.priceMode !== 'perSet' && sizeOptions.length > 0 && (
             <div>
               <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                Select Size:
+                Select Size: {selectedSize ? <strong style={{ color: 'var(--text-primary)' }}>{selectedSize.isSet ? `${selectedSize.label} · Pack of ${selectedSetQuantity}` : selectedSize.label}</strong> : null}
               </span>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {product.sizes.map((size) => {
-                  const isSelected = selectedSize === size;
+                {sizeOptions.map((size) => {
+                  const isSelected = selectedSize?.label === size.label;
                   return (
                     <button
-                      key={size}
+                      key={size.label}
                       onClick={() => setSelectedSize(size)}
                       className={`size-pill ${isSelected ? 'selected' : ''}`}
                       style={{ minWidth: '48px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
-                      {size}
+                      {size.isSet ? `${size.label} · ${size.setQuantity}` : size.label}
                     </button>
                   );
                 })}
@@ -611,7 +641,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
               <ShoppingCart size={18} />
               {product.tag?.toLowerCase() === 'out of stock' 
                 ? 'Out of Stock' 
-                : `Add to Cart — ₹${(getEffectivePrice(product, quantity) * quantity).toFixed(2)}`}
+                : `Add to Cart — ₹${(getEffectivePrice(selectedPriceProduct, quantity) * quantity).toFixed(2)}`}
             </button>
           </div>
         )}
