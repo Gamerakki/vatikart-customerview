@@ -618,5 +618,14 @@ button {
   .b2b-matrix-btn-group {
     grid-template-columns: 1fr;
   }
+  .b2b-matrix-stepper {
+    width: 80px;
+  }
+  .b2b-matrix-stepper-btn {
+    padding: 4px 6px;
+  }
+  .b2b-matrix-stepper-input {
+    width: 32px;
+  }
 }
 

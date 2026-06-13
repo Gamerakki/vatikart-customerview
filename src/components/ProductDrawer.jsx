@@ -96,6 +96,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
 
   const handleRequestQuote = () => {
     let breakdown = '';
+    const unitName = product.unitType || 'piece';
     product.colors.forEach(color => {
       const sizeList = [];
       product.sizes.forEach(size => {
@@ -109,7 +110,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
       }
     });
 
-    const quoteMsg = `Hi! I would like to request a quote for the following bulk order of *${product.name}*:\n\n${breakdown}\n*Total Quantity*: ${totalQuantity} Units\n*Estimated Total*: ₹${totalAfterDiscount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}${discountAmount > 0 ? ` (with ${appliedDiscountPercent}% bulk discount applied)` : ''}\n\nPlease let me know the best pricing and delivery timeframe.`;
+    const quoteMsg = `Hi! I would like to request a quote for the following bulk order of *${product.name}*:\n\n${breakdown}\n*Total Quantity*: ${totalQuantity} ${totalQuantity === 1 ? unitName : unitName + 's'}\n*Estimated Total*: ₹${totalAfterDiscount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}${discountAmount > 0 ? ` (with ${appliedDiscountPercent}% bulk discount applied)` : ''}\n\nPlease let me know the best pricing and delivery timeframe.`;
     
     window.open(`https://wa.me/919876543210?text=${encodeURIComponent(quoteMsg)}`, '_blank');
   };
@@ -118,6 +119,14 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
     return (
       <div className="b2b-matrix-card">
         <h4 className="b2b-matrix-title">B2B Bulk Order Matrix</h4>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px', marginTop: '-12px', marginBottom: '8px' }}>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+            Unit: <strong>{product.unitType || 'piece'}</strong>
+          </span>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            ← Scroll horizontally for sizes →
+          </span>
+        </div>
         <div className="b2b-matrix-table-wrap">
           <table className="b2b-matrix-table">
             <thead>
@@ -177,7 +186,9 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
         <div className="b2b-matrix-summary">
           <div className="b2b-matrix-summary-item">
             <span className="b2b-matrix-summary-label">Total Quantity</span>
-            <span className="b2b-matrix-summary-val">{totalQuantity} Units</span>
+            <span className="b2b-matrix-summary-val">
+              {totalQuantity} {totalQuantity === 1 ? (product.unitType || 'piece') : ((product.unitType || 'piece') + 's')}
+            </span>
           </div>
           {discountAmount > 0 && (
             <div className="b2b-matrix-summary-item">
@@ -331,12 +342,12 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
               <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
-                ₹{product.price}{product.priceMode === 'perSet' ? ' / Set' : ''}
+                ₹{product.price} / {product.priceMode === 'perSet' ? 'Set' : (product.unitType || 'piece')}
               </span>
               {product.originalPrice > product.price && (
                 <>
                   <span style={{ fontSize: '1.1rem', color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>
-                    ₹{product.originalPrice}{product.priceMode === 'perSet' ? ' / Set' : ''}
+                    ₹{product.originalPrice} / {product.priceMode === 'perSet' ? 'Set' : (product.unitType || 'piece')}
                   </span>
                   <span className="badge badge-danger" style={{ fontSize: '0.7rem' }}>
                     Save ₹{product.originalPrice - product.price}
