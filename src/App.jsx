@@ -61,7 +61,7 @@ export default function App() {
           const cfg = getStoreConfig();
           if (cfg.storeName) setStoreTitle(cfg.storeName);
         }
-        emitStorefrontActivity('view_catalog', result.title || getStoreConfig().storeName || 'catalog');
+        emitStorefrontActivity('view_catalog', result.title || getStoreConfig().storeName || 'catalog', result.companyInfo?.companyId);
         setAccessError(null);
       } catch (err) {
         if (cancelled) return;
@@ -363,11 +363,11 @@ export default function App() {
     setIsCartOpen(true);
   };
 
-  const emitStorefrontActivity = (activityType, label) => {
-    const companyId = companyInfo?.companyId;
+  const emitStorefrontActivity = (activityType, label, overrideCompanyId = null) => {
+    const companyId = overrideCompanyId || companyInfo?.companyId;
     if (!socketRef.current || !companyId) return;
     socketRef.current.emit('storefront_activity', {
-      companyId,
+      companyId: String(companyId),
       activityType,
       label,
       timestamp: new Date().toISOString(),
