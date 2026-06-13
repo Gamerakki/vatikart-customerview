@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Plus, Minus, Trash2, ShoppingCart, ArrowRight } from 'lucide-react';
+import { getEffectivePrice, getProductGstAmount } from '../services/pricing';
 
 export default function CartDrawer({
   isOpen,
@@ -9,9 +10,17 @@ export default function CartDrawer({
   onRemoveItem,
   onCheckoutInvoice
 }) {
-  const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const tax = Number((subtotal * 0.05).toFixed(2));
-  const total = Number((subtotal + tax).toFixed(2));
+  const subtotal = cartItems.reduce((acc, item) => {
+    const effectivePrice = getEffectivePrice(item, item.quantity);
+    return acc + (effectivePrice * item.quantity);
+  }, 0);
+  const tax = cartItems.reduce((acc, item) => {
+    const effectivePrice = getEffectivePrice(item, item.quantity);
+    return acc + getProductGstAmount(item, effectivePrice, item.quantity);
+  }, 0);
+  const roundedSubtotal = Number(subtotal.toFixed(2));
+  const roundedTax = Number(tax.toFixed(2));
+  const total = Number((roundedSubtotal + roundedTax).toFixed(2));
   const totalCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -167,7 +176,7 @@ export default function CartDrawer({
                           </button>
                         </div>
                         <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
-                          ₹{(item.price * item.quantity).toFixed(2)}
+                          ₹{(getEffectivePrice(item, item.quantity) * item.quantity).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -202,11 +211,11 @@ export default function CartDrawer({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
                 <span>Subtotal ({totalCount} items)</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>₹{subtotal.toFixed(2)}</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>₹{roundedSubtotal.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-                <span>GST (5%)</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>₹{tax.toFixed(2)}</span>
+                <span>GST Tax</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>₹{roundedTax.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', paddingTop: '4px' }}>
                 <span>Total</span>

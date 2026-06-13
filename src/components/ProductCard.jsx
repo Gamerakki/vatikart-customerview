@@ -2,8 +2,10 @@ import React from 'react';
 import { Star, Eye, Plus } from 'lucide-react';
 
 export default function ProductCard({ product, onViewDetails, onQuickAdd }) {
-  // Calculate discount percentage
-  const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+  // Calculate discount percentage safely
+  const discount = product.originalPrice && product.originalPrice > product.price
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    : 0;
   const isOutOfStock = product.tag?.toLowerCase() === 'out of stock';
 
   // Helper for tag style

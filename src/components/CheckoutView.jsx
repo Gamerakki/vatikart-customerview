@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, MessageCircle, Percent, Trash2, Plus, Minus, FileText, CheckCircle2 } from 'lucide-react';
+import { getEffectivePrice, getProductGstAmount } from '../services/pricing';
 
 export default function CheckoutView({
   cartItems,
@@ -75,7 +76,8 @@ export default function CheckoutView({
 
   const productSavings = cartItems.reduce((acc, item) => {
     const originalPrice = item.originalPrice || item.price;
-    const saving = originalPrice - item.price;
+    const effectivePrice = getEffectivePrice(item, item.quantity);
+    const saving = originalPrice - effectivePrice;
     return acc + (saving * item.quantity);
   }, 0);
 
@@ -84,8 +86,15 @@ export default function CheckoutView({
   const couponSavings = Number(((itemTotalAfterProductSavings * appliedDiscount) / 100).toFixed(2));
   const totalSavings = productSavings + couponSavings;
   
-  const tax = Number(((itemTotalAfterProductSavings - couponSavings) * 0.05).toFixed(2));
-  const totalAmount = Number((itemTotalAfterProductSavings - couponSavings + tax).toFixed(2));
+  const tax = cartItems.reduce((acc, item) => {
+    const effectivePrice = getEffectivePrice(item, item.quantity);
+    const itemSubtotal = effectivePrice * item.quantity;
+    const discountedItemSubtotal = itemSubtotal * (1 - appliedDiscount / 100);
+    return acc + getProductGstAmount(item, effectivePrice, item.quantity) * (1 - appliedDiscount / 100);
+  }, 0);
+  
+  const roundedTax = Number(tax.toFixed(2));
+  const totalAmount = Number((itemTotalAfterProductSavings - couponSavings + roundedTax).toFixed(2));
   const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleConfirm = () => {
@@ -108,12 +117,14 @@ export default function CheckoutView({
           }).join('\n');
         }
 
+        const effectivePrice = getEffectivePrice(item, item.quantity);
         orderListText += `${index + 1}. *${item.name}*\n` +
           `   - Pack Type: ${packName}\n` +
           `   - Qty: ${item.quantity} ${item.quantity === 1 ? 'Set' : 'Sets'} (Total: ${item.quantity * item.setQuantity} Pieces)\n` +
-          `   - Rate: ${currencySymbol}${item.price} / Set${compositionStr}${commentText}\n` +
-          `   - Subtotal: ${currencySymbol}${(item.price * item.quantity).toFixed(2)}\n`;
+          `   - Rate: ${currencySymbol}${effectivePrice} / Set${compositionStr}${commentText}\n` +
+          `   - Subtotal: ${currencySymbol}${(effectivePrice * item.quantity).toFixed(2)}\n`;
       } else {
+        const effectivePrice = getEffectivePrice(item, item.quantity);
         let variantDetails = '';
         if (item.selectedSize && item.selectedSize !== 'One Size') {
           variantDetails += `Size: ${item.selectedSize}`;
@@ -127,7 +138,7 @@ export default function CheckoutView({
           });
         }
         const detailsStr = variantDetails ? ` (${variantDetails})` : '';
-        orderListText += `${index + 1}. *${item.name}* (Qty: ${item.quantity}${detailsStr})${commentText} - ${currencySymbol}${(item.price * item.quantity).toFixed(2)}\n`;
+        orderListText += `${index + 1}. *${item.name}* (Qty: ${item.quantity}${detailsStr})${commentText} - ${currencySymbol}${(effectivePrice * item.quantity).toFixed(2)}\n`;
       }
     });
 
@@ -275,8 +286,9 @@ export default function CheckoutView({
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {cartItems.map((item, idx) => {
-            const savings = item.originalPrice - item.price;
-            const savingsPct = Math.round((savings / item.originalPrice) * 100);
+            const effectivePrice = getEffectivePrice(item, item.quantity);
+            const savings = item.originalPrice - effectivePrice;
+            const savingsPct = item.originalPrice ? Math.round((savings / item.originalPrice) * 100) : 0;
             
             return (
               <div
@@ -387,9 +399,9 @@ export default function CheckoutView({
                       </span>
                     )}
                     <span style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--accent-primary)' }}>
-                      {currencySymbol}{(item.price * item.quantity).toFixed(2)}
+                      {currencySymbol}{(getEffectivePrice(item, item.quantity) * item.quantity).toFixed(2)}
                     </span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>+ 5% tax</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>+ {item.gstRate || 0}% tax</span>
                   </div>
                 </div>
 
@@ -524,9 +536,9 @@ export default function CheckoutView({
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.925rem', color: 'var(--text-secondary)' }}>
           <span>
             Tax
-            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>5% gst</span>
+            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>GST</span>
           </span>
-          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{currencySymbol}{tax.toFixed(2)}</span>
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{currencySymbol}{roundedTax.toFixed(2)}</span>
         </div>
 
         <hr style={{ border: 0, borderTop: '1px solid var(--border-color)', margin: '4px 0' }} />

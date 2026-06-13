@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, ShoppingCart, Plus, Minus, Info } from 'lucide-react';
+import { getEffectivePrice } from '../services/pricing';
 
 export default function ProductDrawer({ isOpen, onClose, product, onAddToCart }) {
   if (!product) return null;
@@ -17,7 +18,12 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
     }
     return initial;
   });
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(product.minimumOrderQty || 1);
+
+  // Sync quantity if product changes
+  useEffect(() => {
+    setQuantity(product.minimumOrderQty || 1);
+  }, [product]);
   const [activeImage, setActiveImage] = useState(product.image);
 
   // Sync state when product changes
@@ -310,10 +316,16 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
             <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
               Quantity
             </span>
+            {product.minimumOrderQty > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', backgroundColor: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b', fontSize: '0.8rem', fontWeight: 600, marginBottom: '12px' }}>
+                <Info size={14} />
+                <span>Minimum order quantity: {product.minimumOrderQty} {product.priceMode === 'perSet' ? 'sets' : 'pcs'}</span>
+              </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', border: '1.5px solid var(--border-color)', borderRadius: 'var(--button-radius)', overflow: 'hidden', alignSelf: 'flex-start' }}>
                 <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  onClick={() => setQuantity(Math.max(product.minimumOrderQty || 1, quantity - 1))}
                   style={{ padding: '10px 14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   <Minus size={14} />
@@ -362,7 +374,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
             <ShoppingCart size={18} />
             {product.tag?.toLowerCase() === 'out of stock' 
               ? 'Out of Stock' 
-              : `Add to Cart — ₹${(product.price * quantity).toFixed(2)}`}
+              : `Add to Cart — ₹${(getEffectivePrice(product, quantity) * quantity).toFixed(2)}`}
           </button>
         </div>
 
