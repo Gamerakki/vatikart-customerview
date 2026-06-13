@@ -180,7 +180,7 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '6px 0', gap: '8px' }}>
           {/* Colors */}
           <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
-            {product.colors.map((c) => (
+            {product.priceMode !== 'perSet' && product.colors.map((c) => (
               <span
                 key={c.name}
                 style={{

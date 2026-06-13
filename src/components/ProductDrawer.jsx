@@ -18,12 +18,13 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
     }
     return initial;
   });
-  const [quantity, setQuantity] = useState(product.minimumOrderQty || 1);
+  const minimumOrderQty = Math.max(1, Number(product.minimumOrderQty) || 1);
+  const [quantity, setQuantity] = useState(minimumOrderQty);
   const [matrixQuantities, setMatrixQuantities] = useState({});
 
   // Sync quantity if product changes
   useEffect(() => {
-    setQuantity(product.minimumOrderQty || 1);
+    setQuantity(minimumOrderQty);
   }, [product]);
   const [activeImage, setActiveImage] = useState(product.image);
 
@@ -42,7 +43,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
     }
     setSelectedOptions(initialOptions);
     
-    setQuantity(1);
+    setQuantity(minimumOrderQty);
     setMatrixQuantities({});
     setActiveImage(product.image);
   }, [product]);
@@ -408,7 +409,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
           </div>
 
           {/* Variant: Colors */}
-          {!isB2BMatrix && product.colors && product.colors.length > 0 && (
+          {!isB2BMatrix && product.priceMode !== 'perSet' && product.colors && product.colors.length > 0 && (
             <div>
               <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
                 Select Color: <strong style={{ color: 'var(--text-primary)' }}>{selectedColor?.name}</strong>
@@ -437,7 +438,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
           )}
 
           {/* Variant: Sizes */}
-          {!isB2BMatrix && product.sizes && product.sizes.length > 0 && (
+          {!isB2BMatrix && product.priceMode !== 'perSet' && product.sizes && product.sizes.length > 0 && (
             <div>
               <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
                 Select Size:
@@ -559,7 +560,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', border: '1.5px solid var(--border-color)', borderRadius: 'var(--button-radius)', overflow: 'hidden', alignSelf: 'flex-start' }}>
                   <button
-                    onClick={() => setQuantity(Math.max(product.minimumOrderQty || 1, quantity - 1))}
+                    onClick={() => setQuantity(Math.max(minimumOrderQty, quantity - 1))}
                     style={{ padding: '10px 14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <Minus size={14} />
@@ -568,7 +569,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
                     {quantity} {product.priceMode === 'perSet' ? (quantity === 1 ? 'Set' : 'Sets') : (quantity === 1 ? 'pc' : 'pcs')}
                   </span>
                   <button
-                    onClick={() => setQuantity(quantity + 1)}
+                    onClick={() => setQuantity(Math.max(minimumOrderQty, quantity + 1))}
                     style={{ padding: '10px 14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <Plus size={14} />
@@ -588,7 +589,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
         {/* Footer Actions */}
         {!isB2BMatrix && (
           <div className="drawer-footer">
-            <button
+              <button
               onClick={() => {
                 if (product.tag?.toLowerCase() !== 'out of stock') {
                   handleAdd();

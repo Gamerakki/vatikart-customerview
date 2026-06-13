@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { loadStoreProducts, getStoreConfig, bookPublicOrder, requestAccessToCatalogue } from './services/storeApi';
 import Header from './components/Header';
 import FilterSidebar from './components/FilterSidebar';
@@ -8,6 +8,7 @@ import CartDrawer from './components/CartDrawer';
 import MockInvoiceModal from './components/MockInvoiceModal';
 import CheckoutView from './components/CheckoutView';
 import { ShoppingBag, Lock } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 export default function App() {
   const [selectedCatalogueId, setSelectedCatalogueId] = useState(() => {
@@ -29,6 +30,7 @@ export default function App() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState(localStorage.getItem('vatikart_customer_phone') || '');
   const [pendingPrivateCatalogue, setPendingPrivateCatalogue] = useState(null); // for private catalogue click-to-request flow
+  const socketRef = useRef(null);
 
   // Theme state
   const [theme, setTheme] = useState(() => {
@@ -57,6 +59,7 @@ export default function App() {
           const cfg = getStoreConfig();
           if (cfg.storeName) setStoreTitle(cfg.storeName);
         }
+        emitStorefrontActivity('view_catalog', result.title || getStoreConfig().storeName || 'catalog');
         setAccessError(null);
       } catch (err) {
         if (cancelled) return;
@@ -103,6 +106,17 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('vatikart_theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    const socketBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.vatikart.in';
+    const socket = io(socketBaseUrl, { transports: ['websocket'] });
+    socketRef.current = socket;
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, []);
 
   // Sync cart to local storage
   useEffect(() => {
@@ -324,6 +338,17 @@ export default function App() {
     setIsCartOpen(true);
   };
 
+  const emitStorefrontActivity = (activityType, label) => {
+    const companyId = companyInfo?.companyId;
+    if (!socketRef.current || !companyId) return;
+    socketRef.current.emit('storefront_activity', {
+      companyId,
+      activityType,
+      label,
+      timestamp: new Date().toISOString(),
+    });
+  };
+
   // Quick Add handler (adds default first size/color variant and option defaults)
   const handleQuickAdd = (product) => {
     const defaultOptions = {};
@@ -336,8 +361,8 @@ export default function App() {
     }
     handleAddToCart({
       ...product,
-      selectedSize: product.sizes && product.sizes.length > 0 ? product.sizes[0] : null,
-      selectedColor: product.colors && product.colors.length > 0 ? product.colors[0] : null,
+      selectedSize: product.priceMode === 'perSet' ? null : (product.sizes && product.sizes.length > 0 ? product.sizes[0] : null),
+      selectedColor: product.priceMode === 'perSet' ? null : (product.colors && product.colors.length > 0 ? product.colors[0] : null),
       selectedOptions: defaultOptions,
       quantity: 1
     });
@@ -834,6 +859,7 @@ export default function App() {
                       onViewDetails={(prod) => {
                         setSelectedProduct(prod);
                         setIsProductOpen(true);
+                        emitStorefrontActivity('view_product', prod.name);
                       }}
                       onQuickAdd={handleQuickAdd}
                     />
