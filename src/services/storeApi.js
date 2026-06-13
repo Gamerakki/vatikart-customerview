@@ -159,7 +159,10 @@ async function fetchWithAuthPaths(catalogueId, apiBase, token, margin = 0) {
     if (body?.status && Array.isArray(body.data)) {
       return {
         products: body.data.map((item, index) => mapApiProduct(item, index, margin)),
-        title: body.title || null
+        title: body.title || null,
+        bannerText: body.bannerText ?? null,
+        bannerActive: body.bannerActive ?? false,
+        bannerImgPath: body.bannerImgPath ?? null,
       };
     }
     if (Array.isArray(body)) {
@@ -238,6 +241,9 @@ export async function loadStoreProducts(overrideCatalogueId = undefined) {
         catalogueId: resolvedCatalogueId,
         companyInfo,
         catalogues,
+        bannerText: live.bannerText ?? null,
+        bannerActive: live.bannerActive ?? false,
+        bannerImgPath: live.bannerImgPath ?? null,
         message: products.length === 0 ? 'This catalogue has no products yet.' : null,
       };
     }

@@ -27,6 +27,9 @@ export default function App() {
   const [catalogNotice, setCatalogNotice] = useState(null);
   const [storeTitle, setStoreTitle] = useState(() => getStoreConfig().storeName);
   const { resellerName, resellerPhone } = getStoreConfig();
+  const [bannerText, setBannerText] = useState(null);
+  const [bannerActive, setBannerActive] = useState(false);
+  const [bannerImgPath, setBannerImgPath] = useState(null);
   const [accessError, setAccessError] = useState(null);
   const [accessRequestStatus, setAccessRequestStatus] = useState('idle'); // 'idle', 'submitting', 'submitted', 'approved'
   const [customerName, setCustomerName] = useState('');
@@ -51,6 +54,9 @@ export default function App() {
         setCatalogNotice(result.message);
         setCatalogues(result.catalogues || []);
         setCompanyInfo(result.companyInfo);
+        setBannerText(result.bannerText ?? null);
+        setBannerActive(result.bannerActive ?? false);
+        setBannerImgPath(result.bannerImgPath ?? null);
 
         if (result.catalogueId && !selectedCatalogueId) {
           setSelectedCatalogueId(result.catalogueId);
@@ -580,6 +586,27 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+
+      {/* ── Text Announcement Banner ── */}
+      {bannerActive && bannerText && (
+        <div style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 200,
+          backgroundColor: 'var(--accent-primary)',
+          color: '#fff',
+          textAlign: 'center',
+          padding: '10px 24px',
+          fontSize: '0.875rem',
+          fontWeight: 700,
+          letterSpacing: '0.02em',
+          lineHeight: 1.4,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+        }}>
+          {bannerText}
+        </div>
+      )}
+
       {/* Header component */}
       <Header
         cartCount={totalCartCount}
@@ -602,6 +629,23 @@ export default function App() {
 
       />
 
+      {/* ── Cover Banner Image ── */}
+      {bannerImgPath && (
+        <div style={{ width: '100%', padding: '0 0 4px 0', lineHeight: 0 }}>
+          <img
+            src={`https://cdn.vatikart.in/${bannerImgPath}`}
+            alt="Catalogue banner"
+            style={{
+              width: '100%',
+              maxHeight: '320px',
+              objectFit: 'cover',
+              borderRadius: '0 0 12px 12px',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
+              display: 'block',
+            }}
+          />
+        </div>
+      )}
 
       {catalogNotice && (
         <div style={{
