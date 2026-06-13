@@ -366,11 +366,28 @@ export default function App() {
   const emitStorefrontActivity = (activityType, label, overrideCompanyId = null) => {
     const companyId = overrideCompanyId || companyInfo?.companyId;
     if (!socketRef.current || !companyId) return;
+
+    let customerName = '';
+    let customerPhone = localStorage.getItem('vatikart_customer_phone') || '';
+
+    try {
+      const savedCustomer = localStorage.getItem('vatikart_customer');
+      if (savedCustomer) {
+        const parsed = JSON.parse(savedCustomer);
+        if (parsed.name) customerName = parsed.name;
+        if (parsed.phone) customerPhone = parsed.phone;
+      }
+    } catch (err) {
+      console.warn('Failed to parse customer info', err);
+    }
+
     socketRef.current.emit('storefront_activity', {
       companyId: String(companyId),
       activityType,
       label,
       timestamp: new Date().toISOString(),
+      customerName,
+      customerPhone,
     });
   };
 
