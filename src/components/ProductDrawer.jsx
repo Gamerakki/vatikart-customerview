@@ -19,6 +19,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
     return initial;
   });
   const [quantity, setQuantity] = useState(product.minimumOrderQty || 1);
+  const [matrixQuantities, setMatrixQuantities] = useState({});
 
   // Sync quantity if product changes
   useEffect(() => {
@@ -42,8 +43,181 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
     setSelectedOptions(initialOptions);
     
     setQuantity(1);
+    setMatrixQuantities({});
     setActiveImage(product.image);
   }, [product]);
+
+  const isB2BMatrix = product.priceMode !== 'perSet' && product.colors && product.colors.length > 0 && product.sizes && product.sizes.length > 0;
+
+  const handleCellChange = (colorName, sizeName, val) => {
+    const num = Math.max(0, parseInt(val, 10) || 0);
+    setMatrixQuantities(prev => ({
+      ...prev,
+      [`${colorName}_${sizeName}`]: num
+    }));
+  };
+
+  const handleDecrement = (colorName, sizeName) => {
+    const current = matrixQuantities[`${colorName}_${sizeName}`] || 0;
+    if (current > 0) {
+      handleCellChange(colorName, sizeName, current - 1);
+    }
+  };
+
+  const handleIncrement = (colorName, sizeName) => {
+    const current = matrixQuantities[`${colorName}_${sizeName}`] || 0;
+    handleCellChange(colorName, sizeName, current + 1);
+  };
+
+  const totalQuantity = Object.values(matrixQuantities).reduce((sum, qty) => sum + qty, 0);
+  const effectiveUnitPrice = getEffectivePrice(product, totalQuantity);
+  const totalBeforeDiscount = product.price * totalQuantity;
+  const totalAfterDiscount = effectiveUnitPrice * totalQuantity;
+  const discountAmount = totalBeforeDiscount - totalAfterDiscount;
+  const appliedDiscountPercent = product.price > 0 ? Math.round(((product.price - effectiveUnitPrice) / product.price) * 100) : 0;
+
+  const handleAddBulk = () => {
+    product.colors.forEach(color => {
+      product.sizes.forEach(size => {
+        const qty = matrixQuantities[`${color.name}_${size}`] || 0;
+        if (qty > 0) {
+          onAddToCart({
+            ...product,
+            selectedColor: color,
+            selectedSize: size,
+            selectedOptions: {},
+            quantity: qty
+          });
+        }
+      });
+    });
+    onClose();
+  };
+
+  const handleRequestQuote = () => {
+    let breakdown = '';
+    product.colors.forEach(color => {
+      const sizeList = [];
+      product.sizes.forEach(size => {
+        const qty = matrixQuantities[`${color.name}_${size}`] || 0;
+        if (qty > 0) {
+          sizeList.push(`${qty} ${size}`);
+        }
+      });
+      if (sizeList.length > 0) {
+        breakdown += `• *${color.name}*: ${sizeList.join(', ')}\n`;
+      }
+    });
+
+    const quoteMsg = `Hi! I would like to request a quote for the following bulk order of *${product.name}*:\n\n${breakdown}\n*Total Quantity*: ${totalQuantity} Units\n*Estimated Total*: ₹${totalAfterDiscount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}${discountAmount > 0 ? ` (with ${appliedDiscountPercent}% bulk discount applied)` : ''}\n\nPlease let me know the best pricing and delivery timeframe.`;
+    
+    window.open(`https://wa.me/919876543210?text=${encodeURIComponent(quoteMsg)}`, '_blank');
+  };
+
+  const renderB2BMatrix = () => {
+    return (
+      <div className="b2b-matrix-card">
+        <h4 className="b2b-matrix-title">B2B Bulk Order Matrix</h4>
+        <div className="b2b-matrix-table-wrap">
+          <table className="b2b-matrix-table">
+            <thead>
+              <tr>
+                <th>Colors</th>
+                {product.sizes.map(size => (
+                  <th key={size} style={{ textAlign: 'center' }}>{size}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {product.colors.map(color => (
+                <tr key={color.name}>
+                  <td>
+                    <div className="b2b-matrix-color-cell">
+                      <span className="b2b-matrix-color-dot" style={{ backgroundColor: color.hex }} />
+                      <span>{color.name}</span>
+                    </div>
+                  </td>
+                  {product.sizes.map(size => {
+                    const cellKey = `${color.name}_${size}`;
+                    const qty = matrixQuantities[cellKey] || 0;
+                    return (
+                      <td key={size} style={{ textAlign: 'center' }}>
+                        <div className="b2b-matrix-stepper" style={{ margin: '0 auto' }}>
+                          <button
+                            type="button"
+                            className="b2b-matrix-stepper-btn"
+                            onClick={() => handleDecrement(color.name, size)}
+                          >
+                            <Minus size={10} />
+                          </button>
+                          <input
+                            type="text"
+                            className="b2b-matrix-stepper-input"
+                            value={qty || 0}
+                            onChange={(e) => handleCellChange(color.name, size, e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="b2b-matrix-stepper-btn"
+                            onClick={() => handleIncrement(color.name, size)}
+                          >
+                            <Plus size={10} />
+                          </button>
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Summary Details */}
+        <div className="b2b-matrix-summary">
+          <div className="b2b-matrix-summary-item">
+            <span className="b2b-matrix-summary-label">Total Quantity</span>
+            <span className="b2b-matrix-summary-val">{totalQuantity} Units</span>
+          </div>
+          {discountAmount > 0 && (
+            <div className="b2b-matrix-summary-item">
+              <span className="b2b-matrix-summary-label">Bulk Discount</span>
+              <span className="b2b-matrix-summary-val b2b-matrix-summary-discount">
+                {appliedDiscountPercent}% Applied (-₹{discountAmount.toFixed(2)})
+              </span>
+            </div>
+          )}
+          <div className="b2b-matrix-summary-item" style={{ textAlign: 'right' }}>
+            <span className="b2b-matrix-summary-label">Total</span>
+            <span className="b2b-matrix-summary-total">₹{totalAfterDiscount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="b2b-matrix-btn-group">
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={handleRequestQuote}
+            disabled={totalQuantity === 0}
+            style={{ opacity: totalQuantity === 0 ? 0.5 : 1, cursor: totalQuantity === 0 ? 'not-allowed' : 'pointer' }}
+          >
+            Request Quote
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleAddBulk}
+            disabled={totalQuantity === 0}
+            style={{ opacity: totalQuantity === 0 ? 0.5 : 1, cursor: totalQuantity === 0 ? 'not-allowed' : 'pointer' }}
+          >
+            <ShoppingCart size={16} />
+            Add Bulk to Cart
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const handleAdd = () => {
     onAddToCart({
@@ -178,7 +352,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
           </div>
 
           {/* Variant: Colors */}
-          {product.priceMode !== 'perSet' && product.colors && product.colors.length > 0 && (
+          {!isB2BMatrix && product.colors && product.colors.length > 0 && (
             <div>
               <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
                 Select Color: <strong style={{ color: 'var(--text-primary)' }}>{selectedColor?.name}</strong>
@@ -207,7 +381,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
           )}
 
           {/* Variant: Sizes */}
-          {product.priceMode !== 'perSet' && product.sizes && product.sizes.length > 0 && (
+          {!isB2BMatrix && product.sizes && product.sizes.length > 0 && (
             <div>
               <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
                 Select Size:
@@ -283,6 +457,9 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
             </div>
           )}
 
+          {/* B2B Bulk Order Matrix */}
+          {isB2BMatrix && renderB2BMatrix()}
+
           {/* Description */}
           <div>
             <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
@@ -312,71 +489,75 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
           )}
 
           {/* Quantity Selector */}
-          <div>
-            <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-              Quantity
-            </span>
-            {product.minimumOrderQty > 1 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', backgroundColor: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b', fontSize: '0.8rem', fontWeight: 600, marginBottom: '12px' }}>
-                <Info size={14} />
-                <span>Minimum order quantity: {product.minimumOrderQty} {product.priceMode === 'perSet' ? 'sets' : 'pcs'}</span>
-              </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', border: '1.5px solid var(--border-color)', borderRadius: 'var(--button-radius)', overflow: 'hidden', alignSelf: 'flex-start' }}>
-                <button
-                  onClick={() => setQuantity(Math.max(product.minimumOrderQty || 1, quantity - 1))}
-                  style={{ padding: '10px 14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Minus size={14} />
-                </button>
-                <span style={{ width: '80px', textAlign: 'center', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {quantity} {product.priceMode === 'perSet' ? (quantity === 1 ? 'Set' : 'Sets') : (quantity === 1 ? 'pc' : 'pcs')}
-                </span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  style={{ padding: '10px 14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-              {product.priceMode === 'perSet' && product.setQuantity && (
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>
-                  (Total: {quantity * product.setQuantity} pieces)
-                </span>
+          {!isB2BMatrix && (
+            <div>
+              <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                Quantity
+              </span>
+              {product.minimumOrderQty > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', backgroundColor: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b', fontSize: '0.8rem', fontWeight: 600, marginBottom: '12px' }}>
+                  <Info size={14} />
+                  <span>Minimum order quantity: {product.minimumOrderQty} {product.priceMode === 'perSet' ? 'sets' : 'pcs'}</span>
+                </div>
               )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', border: '1.5px solid var(--border-color)', borderRadius: 'var(--button-radius)', overflow: 'hidden', alignSelf: 'flex-start' }}>
+                  <button
+                    onClick={() => setQuantity(Math.max(product.minimumOrderQty || 1, quantity - 1))}
+                    style={{ padding: '10px 14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <span style={{ width: '80px', textAlign: 'center', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {quantity} {product.priceMode === 'perSet' ? (quantity === 1 ? 'Set' : 'Sets') : (quantity === 1 ? 'pc' : 'pcs')}
+                  </span>
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    style={{ padding: '10px 14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+                {product.priceMode === 'perSet' && product.setQuantity && (
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>
+                    (Total: {quantity * product.setQuantity} pieces)
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
 
         {/* Footer Actions */}
-        <div className="drawer-footer">
-          <button
-            onClick={() => {
-              if (product.tag?.toLowerCase() !== 'out of stock') {
-                handleAdd();
-              }
-            }}
-            disabled={product.tag?.toLowerCase() === 'out of stock'}
-            className="btn btn-primary"
-            style={{ 
-              width: '100%', 
-              height: '48px', 
-              display: 'flex', 
-              justifyContent: 'center', 
-              gap: '10px', 
-              fontSize: '1rem',
-              opacity: product.tag?.toLowerCase() === 'out of stock' ? 0.5 : 1,
-              cursor: product.tag?.toLowerCase() === 'out of stock' ? 'not-allowed' : 'pointer'
-            }}
-          >
-            <ShoppingCart size={18} />
-            {product.tag?.toLowerCase() === 'out of stock' 
-              ? 'Out of Stock' 
-              : `Add to Cart — ₹${(getEffectivePrice(product, quantity) * quantity).toFixed(2)}`}
-          </button>
-        </div>
+        {!isB2BMatrix && (
+          <div className="drawer-footer">
+            <button
+              onClick={() => {
+                if (product.tag?.toLowerCase() !== 'out of stock') {
+                  handleAdd();
+                }
+              }}
+              disabled={product.tag?.toLowerCase() === 'out of stock'}
+              className="btn btn-primary"
+              style={{ 
+                width: '100%', 
+                height: '48px', 
+                display: 'flex', 
+                justifyContent: 'center', 
+                gap: '10px', 
+                fontSize: '1rem',
+                opacity: product.tag?.toLowerCase() === 'out of stock' ? 0.5 : 1,
+                cursor: product.tag?.toLowerCase() === 'out of stock' ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <ShoppingCart size={18} />
+              {product.tag?.toLowerCase() === 'out of stock' 
+                ? 'Out of Stock' 
+                : `Add to Cart — ₹${(getEffectivePrice(product, quantity) * quantity).toFixed(2)}`}
+            </button>
+          </div>
+        )}
 
       </div>
     </>
