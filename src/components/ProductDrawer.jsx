@@ -78,6 +78,19 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, w
     .filter((row) => Number.isFinite(row.minQty) && row.minQty > 0 && row.discountedPrice != null)
     .sort((a, b) => a.minQty - b.minQty);
 
+  const getAvailableInventoryForCombo = (sizeOptionId, colorOptionId) => {
+    const rows = Array.isArray(product.inventoryItems) ? product.inventoryItems : [];
+    if (rows.length === 0) {
+      return Number.POSITIVE_INFINITY;
+    }
+    const match = rows.find((row) => {
+      const sizeMatch = (row.sizeOptionId ?? null) === (sizeOptionId ?? null);
+      const colorMatch = (row.colorOptionId ?? null) === (colorOptionId ?? null);
+      return sizeMatch && colorMatch;
+    });
+    return Number(match?.quantity || 0);
+  };
+
   const handleCellChange = (colorName, sizeName, val) => {
     const num = Math.max(0, parseInt(val, 10) || 0);
     setMatrixQuantities(prev => ({
@@ -107,6 +120,19 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, w
 
   const handleAddBulk = () => {
     const effectivePiecePrice = getEffectivePrice(product, totalQuantity);
+
+    for (const color of product.colors) {
+      for (const size of sizeOptions) {
+        const qty = matrixQuantities[`${color.name}_${size.label}`] || 0;
+        if (qty <= 0) continue;
+
+        const available = getAvailableInventoryForCombo(size.optionId ?? null, color.optionId ?? null);
+        if (available >= 0 && qty > available) {
+          alert(`Only ${available} available for ${color.name} / ${size.label}. Please reduce quantity.`);
+          return;
+        }
+      }
+    }
 
     product.colors.forEach(color => {
       sizeOptions.forEach(size => {
@@ -316,6 +342,16 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, w
   };
 
   const handleAdd = () => {
+    const selectedSizeOptionId = selectedSize?.optionId ?? null;
+    const selectedColorOptionId = selectedColor?.optionId ?? null;
+    const available = getAvailableInventoryForCombo(selectedSizeOptionId, selectedColorOptionId);
+    if (available >= 0 && quantity > available) {
+      const sizeLabel = selectedSize?.label || 'Default';
+      const colorLabel = selectedColor?.name || 'Default';
+      alert(`Only ${available} available for ${colorLabel} / ${sizeLabel}. Please reduce quantity.`);
+      return;
+    }
+
     onAddToCart({
       ...selectedPriceProduct,
       selectedColor: product.priceMode === 'perSet' ? null : selectedColor,

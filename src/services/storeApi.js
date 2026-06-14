@@ -120,12 +120,22 @@ function mapApiProduct(item, index, margin = 0) {
     sizes: sizeOptions.map((size) => size.label),
     colors: item.colors?.length
       ? item.colors.map((c) => ({
+          optionId: c.option_id,
           name: c.name || c.label || 'Default',
           hex: c.hex || c.accent || '#94a3b8',
           isSet: Boolean(c.is_set),
           setQuantity: Number(c.set_quantity || 1),
         }))
       : [{ name: 'Default', hex: '#94a3b8' }],
+    inventoryItems: Array.isArray(item.inventory_items)
+      ? item.inventory_items.map((inv) => ({
+          sizeOptionId: inv.size_option_id ?? null,
+          colorOptionId: inv.color_option_id ?? null,
+          sizeLabel: inv.size_label ?? null,
+          colorLabel: inv.color_label ?? null,
+          quantity: Number(inv.quantity || 0),
+        }))
+      : [],
     options: {},
     priceMode: item.price_mode || 'perPiece',
     setQuantity: item.set_quantity != null ? Number(item.set_quantity) : null,

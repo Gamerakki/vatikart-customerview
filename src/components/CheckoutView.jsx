@@ -36,6 +36,41 @@ export default function CheckoutView({
   );
   const hasMoqViolation = moqViolations.length > 0;
 
+  const inventoryViolations = useMemo(() => {
+    const demandByCombo = new Map();
+
+    cartItems.forEach((item) => {
+      const inventoryRows = Array.isArray(item.inventoryItems) ? item.inventoryItems : [];
+      if (inventoryRows.length === 0) return;
+
+      const selectedSizeOptionId = item.selectedSizeOption?.optionId
+        ?? item.sizeOptions?.find((size) => size.label === item.selectedSize)?.optionId
+        ?? null;
+      const selectedColorOptionId = item.selectedColor?.optionId
+        ?? item.colors?.find((color) => color.name === item.selectedColor?.name)?.optionId
+        ?? null;
+
+      const comboKey = `${item.id}:${selectedSizeOptionId ?? 'null'}:${selectedColorOptionId ?? 'null'}`;
+      const required = (demandByCombo.get(comboKey)?.required || 0) + Number(item.quantity || 0);
+      const label = `${item.name}${item.selectedColor?.name || item.selectedSize ? ` (${[item.selectedColor?.name, item.selectedSize].filter(Boolean).join(' / ')})` : ''}`;
+
+      const matchingRow = inventoryRows.find((row) => {
+        const sizeMatch = (row.sizeOptionId ?? null) === (selectedSizeOptionId ?? null);
+        const colorMatch = (row.colorOptionId ?? null) === (selectedColorOptionId ?? null);
+        return sizeMatch && colorMatch;
+      });
+
+      demandByCombo.set(comboKey, {
+        label,
+        required,
+        available: Number(matchingRow?.quantity || 0),
+      });
+    });
+
+    return Array.from(demandByCombo.values()).filter((row) => row.required > row.available);
+  }, [cartItems]);
+  const hasInventoryViolation = inventoryViolations.length > 0;
+
   useEffect(() => {
     if (hasMoqViolation) {
       setCouponSuccess('');
@@ -148,6 +183,7 @@ export default function CheckoutView({
   const handleConfirm = () => {
     if (!validateForm()) return;
     if (hasMoqViolation) return;
+    if (hasInventoryViolation) return;
 
     let orderListText = '';
     cartItems.forEach((item, index) => {
@@ -267,6 +303,13 @@ export default function CheckoutView({
 
       <div className="glass-card" style={{ padding: '20px' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '16px' }}>Your order items</h3>
+        {hasInventoryViolation && (
+          <div style={{ marginBottom: '14px', borderRadius: '10px', padding: '10px 12px', border: '1px solid rgba(220, 38, 38, 0.35)', backgroundColor: 'rgba(220, 38, 38, 0.10)', color: '#dc2626', fontSize: '0.8rem', fontWeight: 700 }}>
+            {inventoryViolations.map((violation, idx) => (
+              <div key={`${violation.label}-${idx}`}>{violation.label}: requested {violation.required}, available {violation.available}</div>
+            ))}
+          </div>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {cartItems.map((item, idx) => {
             const effectivePrice = getEffectivePrice(item, item.quantity);
@@ -471,8 +514,8 @@ export default function CheckoutView({
         <button
           onClick={handleConfirm}
           className="btn btn-primary checkout-confirm-btn"
-          disabled={hasMoqViolation}
-          style={{ width: '100%', maxWidth: '700px', height: '50px', fontSize: '1rem', fontWeight: 800, borderRadius: '12px', backgroundColor: '#000000', backgroundImage: 'none', color: '#ffffff', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px', transition: 'var(--transition-smooth)', opacity: hasMoqViolation ? 0.55 : 1, cursor: hasMoqViolation ? 'not-allowed' : 'pointer' }}
+          disabled={hasMoqViolation || hasInventoryViolation}
+          style={{ width: '100%', maxWidth: '700px', height: '50px', fontSize: '1rem', fontWeight: 800, borderRadius: '12px', backgroundColor: '#000000', backgroundImage: 'none', color: '#ffffff', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px', transition: 'var(--transition-smooth)', opacity: hasMoqViolation || hasInventoryViolation ? 0.55 : 1, cursor: hasMoqViolation || hasInventoryViolation ? 'not-allowed' : 'pointer' }}
         >
           <span style={{ letterSpacing: '0.03em' }}>{t('confirm_order').toUpperCase()}</span>
           <span>→</span>
