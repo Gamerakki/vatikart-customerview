@@ -11,6 +11,8 @@ import { ShoppingBag, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { translations } from './utils/i18n';
 
+const ORDER_STEPS = ['UNCONFIRMED', 'CONFIRMED', 'ACCEPTED', 'COMPLETED'];
+
 export default function App() {
   const [selectedCatalogueId, setSelectedCatalogueId] = useState(() => {
     return getStoreConfig().catalogueId;
@@ -115,7 +117,10 @@ export default function App() {
   const [isProductOpen, setIsProductOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [invoiceData, setInvoiceData] = useState(null);
-  const [currentView, setCurrentView] = useState('catalog'); // 'catalog' or 'checkout'
+  const [currentView, setCurrentView] = useState('catalog'); // 'catalog' | 'checkout' | 'orders'
+  const [customerOrders, setCustomerOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState('');
 
   // Sync theme
   useEffect(() => {
@@ -146,6 +151,36 @@ export default function App() {
 
   const t = (key) => translations[lang]?.[key] || translations.en[key] || key;
   const whatsappTargetPhone = companyInfo?.salesPhone || companyInfo?.supportPhone || resellerPhone || '919876543210';
+
+  const loadCustomerOrders = useCallback(async () => {
+    const storedPhone = (localStorage.getItem('vatikart_customer_phone') || '').trim();
+    if (!storedPhone) {
+      setCustomerOrders([]);
+      setOrdersError('No customer phone found. Place an order or request access first.');
+      return;
+    }
+
+    setOrdersLoading(true);
+    setOrdersError('');
+    try {
+      const { apiBase } = getStoreConfig();
+      const response = await fetch(`${apiBase}/order/public/customer/${encodeURIComponent(storedPhone)}`, {
+        headers: { Accept: 'application/json' },
+      });
+
+      const body = await response.json();
+      if (!response.ok || !body?.status) {
+        throw new Error(body?.msg || 'Failed to fetch customer orders.');
+      }
+
+      setCustomerOrders(Array.isArray(body.data) ? body.data : []);
+    } catch (error) {
+      setOrdersError(error instanceof Error ? error.message : 'Unable to load orders right now.');
+      setCustomerOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const socketBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.vatikart.in';
@@ -701,6 +736,10 @@ export default function App() {
         lang={lang}
         onLanguageChange={setLang}
         t={t}
+        onMyOrdersClick={() => {
+          setCurrentView('orders');
+          void loadCustomerOrders();
+        }}
         wholesalePricingApplied={wholesalePricingApplied}
         wholesaleGroupName={wholesaleGroupName}
         onBackClick={!isDirectLink && selectedCatalogueId && catalogues.length > 1 ? () => {
@@ -1077,6 +1116,84 @@ export default function App() {
             </section>
           </main>
         )
+      ) : currentView === 'orders' ? (
+        <main className="container" style={{ flex: 1, padding: '32px 24px', width: '100%', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)' }}>My Orders</h2>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  void loadCustomerOrders();
+                }}
+              >
+                Refresh
+              </button>
+              <button className="btn btn-outline" onClick={() => setCurrentView('catalog')}>Back to Store</button>
+            </div>
+          </div>
+
+          {ordersLoading ? (
+            <div style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>Loading your orders...</div>
+          ) : ordersError ? (
+            <div style={{ color: 'var(--danger)', fontWeight: 700 }}>{ordersError}</div>
+          ) : customerOrders.length === 0 ? (
+            <div style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>No orders found for your phone number yet.</div>
+          ) : (
+            <div style={{ display: 'grid', gap: '14px' }}>
+              {customerOrders.map((order) => {
+                const currentStepIndex = ORDER_STEPS.indexOf(order.status);
+
+                return (
+                  <div key={order.orderId} style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Order #{order.orderId}</div>
+                      <div style={{ color: 'var(--accent-primary)', fontWeight: 800 }}>{order.status}</div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {ORDER_STEPS.map((step, idx) => (
+                        <div
+                          key={step}
+                          style={{
+                            fontSize: '0.72rem',
+                            padding: '4px 8px',
+                            borderRadius: '999px',
+                            border: '1px solid var(--border-color)',
+                            color: idx <= currentStepIndex ? 'var(--accent-primary)' : 'var(--text-tertiary)',
+                            background: idx <= currentStepIndex ? 'var(--accent-light)' : 'transparent',
+                            fontWeight: 700,
+                          }}
+                        >
+                          {step}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                      Date: {new Date(order.addedDate).toLocaleString()}
+                    </div>
+
+                    <div style={{ display: 'grid', gap: '6px', fontSize: '0.86rem' }}>
+                      <div style={{ color: 'var(--text-secondary)' }}>Subtotal: <strong style={{ color: 'var(--text-primary)' }}>₹{Number(order.subtotal || 0).toFixed(2)}</strong></div>
+                      <div style={{ color: 'var(--text-secondary)' }}>Tax: <strong style={{ color: 'var(--text-primary)' }}>₹{Number(order.tax || 0).toFixed(2)}</strong></div>
+                      <div style={{ color: 'var(--text-secondary)' }}>Total: <strong style={{ color: 'var(--text-primary)' }}>₹{Number(order.total || 0).toFixed(2)}</strong></div>
+                    </div>
+
+                    <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '8px', display: 'grid', gap: '5px' }}>
+                      {(order.items || []).map((item) => (
+                        <div key={item.id} style={{ color: 'var(--text-secondary)', fontSize: '0.84rem', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                          <span>{item.title} x {item.qty}</span>
+                          <strong style={{ color: 'var(--text-primary)' }}>₹{Number(item.price || 0).toFixed(2)}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
       ) : (
         <CheckoutView
           cartItems={cart}

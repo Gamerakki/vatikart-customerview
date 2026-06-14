@@ -19,9 +19,11 @@ export default function Header({
   t = (key) => key,
   wholesalePricingApplied = false,
   wholesaleGroupName = '',
+  onMyOrdersClick = null,
 }) {
   const displayName = resellerName || storeName;
   const chatPhone = resellerPhone || '919876543210';
+  const hasSavedCustomerPhone = Boolean(localStorage.getItem('vatikart_customer_phone'));
   return (
     <header className="glass-nav" style={{ position: 'sticky', top: 0, width: '100%', transition: 'var(--transition-smooth)' }}>
       <div className="container" style={{ display: 'flex', flexDirection: 'column', padding: '16px 24px', gap: '16px' }}>
@@ -147,6 +149,21 @@ export default function Header({
                 </div>
               )}
             </button>
+
+            {hasSavedCustomerPhone && onMyOrdersClick && (
+              <button
+                onClick={onMyOrdersClick}
+                className="btn btn-secondary"
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 'var(--button-radius)',
+                  fontWeight: 700,
+                  fontSize: '0.85rem'
+                }}
+              >
+                My Orders
+              </button>
+            )}
           </div>
         </div>
 

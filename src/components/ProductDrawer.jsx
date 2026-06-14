@@ -106,19 +106,25 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, w
   const appliedDiscountPercent = product.price > 0 ? Math.round(((product.price - effectiveUnitPrice) / product.price) * 100) : 0;
 
   const handleAddBulk = () => {
+    const effectivePiecePrice = getEffectivePrice(product, totalQuantity);
+
     product.colors.forEach(color => {
       sizeOptions.forEach(size => {
         const qty = matrixQuantities[`${color.name}_${size.label}`] || 0;
         if (qty > 0) {
+          const setQty = size.isSet ? Math.max(1, Number(size.setQuantity || 1)) : 1;
+          const rowPrice = Number((effectivePiecePrice * setQty).toFixed(2));
+          const rowOriginalPrice = Number((Number(product.price || 0) * setQty).toFixed(2));
+
           onAddToCart({
             ...product,
             selectedColor: color,
             selectedSize: size.label,
             selectedSizeOption: size,
-            selectedSetQuantity: size.isSet ? Math.max(1, Number(size.setQuantity || 1)) : 1,
+            selectedSetQuantity: setQty,
             selectedOptions: {},
-            price: size.isSet ? Number((Number(product.price || 0) * Math.max(1, Number(size.setQuantity || 1))).toFixed(2)) : product.price,
-            originalPrice: size.isSet ? Number((Number(product.originalPrice || product.price || 0) * Math.max(1, Number(size.setQuantity || 1))).toFixed(2)) : product.originalPrice,
+            price: rowPrice,
+            originalPrice: rowOriginalPrice,
             quantity: qty
           });
         }
