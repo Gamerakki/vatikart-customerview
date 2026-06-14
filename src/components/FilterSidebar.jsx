@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Filter, SlidersHorizontal, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function FilterSidebar({
+  products,
   categories,
   selectedCategory,
   onCategoryChange,
@@ -21,6 +22,17 @@ export default function FilterSidebar({
   allColors
 }) {
   const [isOpenMobile, setIsOpenMobile] = useState(false);
+  const [isSizesOpen, setIsSizesOpen] = useState(true);
+  const [isColorsOpen, setIsColorsOpen] = useState(true);
+  const [isTagsOpen, setIsTagsOpen] = useState(true);
+
+  const categoryCounts = (products || []).reduce((acc, product) => {
+    const category = product?.category || 'General';
+    acc[category] = (acc[category] || 0) + 1;
+    return acc;
+  }, {});
+
+  const totalProductCount = (products || []).length;
 
   return (
     <div className="glass-card" style={{ padding: '24px', height: 'fit-content', position: 'sticky', top: '120px', transition: 'var(--transition-smooth)' }}>
@@ -107,7 +119,8 @@ export default function FilterSidebar({
                 transition: 'var(--transition-fast)'
               }}
             >
-              All Products
+              <span>All Products</span>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-tertiary)' }}>({totalProductCount})</span>
             </button>
             {categories.map((cat) => (
               <button
@@ -124,7 +137,8 @@ export default function FilterSidebar({
                   transition: 'var(--transition-fast)'
                 }}
               >
-                {cat}
+                <span>{cat}</span>
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-tertiary)' }}>({categoryCounts[cat] || 0})</span>
               </button>
             ))}
           </div>
@@ -132,79 +146,106 @@ export default function FilterSidebar({
 
         {/* Sizes Section */}
         <div>
-          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-            Sizes
-          </h4>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {allSizes.map((size) => {
-              const isSelected = selectedSizes.includes(size);
-              return (
-                <button
-                  key={size}
-                  onClick={() => onSizeToggle(size)}
-                  className={`size-pill ${isSelected ? 'selected' : ''}`}
-                  style={{ minWidth: '42px', height: '42px', padding: 0 }}
-                >
-                  {size}
-                </button>
-              );
-            })}
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsSizesOpen((prev) => !prev)}
+            style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}
+          >
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+              Sizes
+            </h4>
+            {isSizesOpen ? <ChevronUp size={15} color="var(--text-secondary)" /> : <ChevronDown size={15} color="var(--text-secondary)" />}
+          </button>
+          {isSizesOpen && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {allSizes.map((size) => {
+                const isSelected = selectedSizes.includes(size);
+                return (
+                  <button
+                    key={size}
+                    onClick={() => onSizeToggle(size)}
+                    className={`size-pill ${isSelected ? 'selected' : ''}`}
+                    style={{ minWidth: '42px', height: '42px', padding: 0 }}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Colors Section */}
         <div>
-          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-            Colors
-          </h4>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            {allColors.map((color) => {
-              const isSelected = selectedColors.includes(color.name);
-              const isWhite = color.name.toLowerCase() === 'white';
-              return (
-                <button
-                  key={color.name}
-                  onClick={() => onColorToggle(color.name)}
-                  className={`color-dot ${isSelected ? 'selected' : ''} ${isWhite ? 'color-dot-white' : ''}`}
-                  style={{
-                    backgroundColor: color.hex,
-                    border: isWhite ? '1.5px solid var(--border-color)' : '1px solid rgba(0,0,0,0.1)'
-                  }}
-                  title={color.name}
-                />
-              );
-            })}
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsColorsOpen((prev) => !prev)}
+            style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}
+          >
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+              Colors
+            </h4>
+            {isColorsOpen ? <ChevronUp size={15} color="var(--text-secondary)" /> : <ChevronDown size={15} color="var(--text-secondary)" />}
+          </button>
+          {isColorsOpen && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              {allColors.map((color) => {
+                const isSelected = selectedColors.includes(color.name);
+                const isWhite = color.name.toLowerCase() === 'white';
+                return (
+                  <button
+                    key={color.name}
+                    onClick={() => onColorToggle(color.name)}
+                    className={`color-dot ${isSelected ? 'selected' : ''} ${isWhite ? 'color-dot-white' : ''}`}
+                    style={{
+                      backgroundColor: color.hex,
+                      border: isWhite ? '1.5px solid var(--border-color)' : '1px solid rgba(0,0,0,0.1)'
+                    }}
+                    title={color.name}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Tags Section */}
         <div>
-          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-            Tags
-          </h4>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {(allTags || []).map((tag) => {
-              const isSelected = (selectedTags || []).includes(tag);
-              return (
-                <button
-                  key={tag}
-                  onClick={() => onTagToggle(tag)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '999px',
-                    border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
-                    backgroundColor: isSelected ? 'var(--accent-light)' : 'transparent',
-                    color: isSelected ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                    fontSize: '0.8rem',
-                    fontWeight: isSelected ? 700 : 500,
-                    transition: 'var(--transition-fast)',
-                  }}
-                >
-                  {tag}
-                </button>
-              );
-            })}
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsTagsOpen((prev) => !prev)}
+            style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}
+          >
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+              Tags
+            </h4>
+            {isTagsOpen ? <ChevronUp size={15} color="var(--text-secondary)" /> : <ChevronDown size={15} color="var(--text-secondary)" />}
+          </button>
+          {isTagsOpen && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {(allTags || []).map((tag) => {
+                const isSelected = (selectedTags || []).includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => onTagToggle(tag)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '999px',
+                      border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                      backgroundColor: isSelected ? 'var(--accent-light)' : 'transparent',
+                      color: isSelected ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                      fontSize: '0.8rem',
+                      fontWeight: isSelected ? 700 : 500,
+                      transition: 'var(--transition-fast)',
+                    }}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Price Slider */}

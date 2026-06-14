@@ -199,6 +199,24 @@ export default function App() {
     localStorage.setItem('vatikart_cart', JSON.stringify(cart));
   }, [cart]);
 
+  useEffect(() => {
+    const companyName = companyInfo?.companyName?.trim();
+    if (!companyName) return;
+
+    document.title = `${companyName} | Official Digital Storefront`;
+
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (!metaDescription) {
+      metaDescription = document.createElement('meta');
+      metaDescription.setAttribute('name', 'description');
+      document.head.appendChild(metaDescription);
+    }
+    metaDescription.setAttribute(
+      'content',
+      `Explore catalog collections and order directly from ${companyName} via WhatsApp.`
+    );
+  }, [companyInfo]);
+
   // Sync URL search parameters on Mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1043,6 +1061,7 @@ export default function App() {
             {/* Sidebar Filters */}
             <aside className="sidebar-container">
               <FilterSidebar
+                products={products}
                 categories={categories}
                 selectedCategory={selectedCategory}
                 onCategoryChange={setSelectedCategory}
