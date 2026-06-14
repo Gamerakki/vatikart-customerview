@@ -150,7 +150,7 @@ export default function Header({
               )}
             </button>
 
-            {hasSavedCustomerPhone && onMyOrdersClick && (
+            {onMyOrdersClick && (
               <button
                 onClick={onMyOrdersClick}
                 className="btn btn-secondary"

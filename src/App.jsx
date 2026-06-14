@@ -122,6 +122,9 @@ export default function App() {
   const [customerOrders, setCustomerOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState('');
+  const [lookupPhoneInput, setLookupPhoneInput] = useState(() => {
+    return localStorage.getItem('vatikart_customer_phone') || '';
+  });
 
   // Sync theme
   useEffect(() => {
@@ -153,11 +156,11 @@ export default function App() {
   const t = (key) => translations[lang]?.[key] || translations.en[key] || key;
   const whatsappTargetPhone = companyInfo?.salesPhone || companyInfo?.supportPhone || resellerPhone || '919876543210';
 
-  const loadCustomerOrders = useCallback(async () => {
-    const storedPhone = (localStorage.getItem('vatikart_customer_phone') || '').trim();
-    if (!storedPhone) {
+  const loadCustomerOrders = useCallback(async (phoneOverride) => {
+    const phoneToUse = (phoneOverride !== undefined ? phoneOverride : localStorage.getItem('vatikart_customer_phone') || '').trim();
+    if (!phoneToUse) {
       setCustomerOrders([]);
-      setOrdersError('No customer phone found. Place an order or request access first.');
+      setOrdersError('Please enter your phone number to check your orders.');
       return;
     }
 
@@ -165,7 +168,7 @@ export default function App() {
     setOrdersError('');
     try {
       const { apiBase } = getStoreConfig();
-      const response = await fetch(`${apiBase}/order/public/customer/${encodeURIComponent(storedPhone)}`, {
+      const response = await fetch(`${apiBase}/order/public/customer/${encodeURIComponent(phoneToUse)}`, {
         headers: { Accept: 'application/json' },
       });
 
@@ -175,6 +178,8 @@ export default function App() {
       }
 
       setCustomerOrders(Array.isArray(body.data) ? body.data : []);
+      // If successful, cache this number so they don't need to re-type it next time
+      localStorage.setItem('vatikart_customer_phone', phoneToUse);
     } catch (error) {
       setOrdersError(error instanceof Error ? error.message : 'Unable to load orders right now.');
       setCustomerOrders([]);
@@ -1159,7 +1164,7 @@ export default function App() {
               <button
                 className="btn btn-secondary"
                 onClick={() => {
-                  void loadCustomerOrders();
+                  void loadCustomerOrders(lookupPhoneInput);
                 }}
               >
                 Refresh
@@ -1168,12 +1173,46 @@ export default function App() {
             </div>
           </div>
 
+          {/* Manual phone lookup input */}
+          <div style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '12px',
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px'
+          }}>
+            <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+              Check orders by phone number:
+            </label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input
+                type="text"
+                placeholder="Enter phone number (e.g. 9876543210)"
+                value={lookupPhoneInput}
+                onChange={(e) => setLookupPhoneInput(e.target.value)}
+                className="form-input"
+                style={{ flex: 1, height: '42px', padding: '0 12px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)' }}
+              />
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  void loadCustomerOrders(lookupPhoneInput);
+                }}
+                style={{ height: '42px', padding: '0 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                Search
+              </button>
+            </div>
+          </div>
+
           {ordersLoading ? (
             <div style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>Loading your orders...</div>
           ) : ordersError ? (
             <div style={{ color: 'var(--danger)', fontWeight: 700 }}>{ordersError}</div>
           ) : customerOrders.length === 0 ? (
-            <div style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>No orders found for your phone number yet.</div>
+            <div style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>No orders found for your phone number yet. Enter your phone number above and click Search.</div>
           ) : (
             <div style={{ display: 'grid', gap: '14px' }}>
               {customerOrders.map((order) => {
