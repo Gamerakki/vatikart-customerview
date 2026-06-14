@@ -145,6 +145,7 @@ export default function App() {
   }, []);
 
   const t = (key) => translations[lang]?.[key] || translations.en[key] || key;
+  const whatsappTargetPhone = companyInfo?.salesPhone || companyInfo?.supportPhone || resellerPhone || '919876543210';
 
   useEffect(() => {
     const socketBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.vatikart.in';
@@ -541,7 +542,7 @@ export default function App() {
         : compiledFromTemplate;
 
       // 2. Open WhatsApp message redirect
-      window.open(updatedWhatsappMsg ? `https://wa.me/${resellerPhone || '919876543210'}?text=${encodeURIComponent(updatedWhatsappMsg)}` : `https://wa.me/${resellerPhone || '919876543210'}`, '_blank');
+      window.open(updatedWhatsappMsg ? `https://wa.me/${whatsappTargetPhone}?text=${encodeURIComponent(updatedWhatsappMsg)}` : `https://wa.me/${whatsappTargetPhone}`, '_blank');
       
       // 3. Open printable invoice modal receipt
       setInvoiceData({
@@ -1083,6 +1084,7 @@ export default function App() {
           onRemoveItem={handleRemoveItem}
           onBackToStore={() => setCurrentView('catalog')}
           onConfirmOrder={handleConfirmCheckout}
+          whatsappTargetPhone={whatsappTargetPhone}
           resellerPhone={resellerPhone}
           catalogShareTemplate={catalogShareTemplate}
           compileTemplate={compileTemplate}
@@ -1110,6 +1112,7 @@ export default function App() {
         onClose={() => setIsProductOpen(false)}
         product={selectedProduct}
         onAddToCart={handleAddToCart}
+        whatsappTargetPhone={whatsappTargetPhone}
       />
 
       {/* Cart Drawer */}

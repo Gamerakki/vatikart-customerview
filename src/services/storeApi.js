@@ -211,6 +211,8 @@ export async function loadStoreProducts(overrideCatalogueId = undefined) {
             companyId: body.data.company_id,
             companyName: body.data.company_name,
             logoImgPath: body.data.logo_img_path,
+            salesPhone: body.data.sales_phone || body.data.salesPhone || null,
+            supportPhone: body.data.support_phone || body.data.supportPhone || null,
           };
           catalogues = body.data.catalogues || [];
           

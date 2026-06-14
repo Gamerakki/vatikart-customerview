@@ -10,6 +10,7 @@ export default function CheckoutView({
   onRemoveItem,
   onBackToStore,
   onConfirmOrder,
+  whatsappTargetPhone = '',
   resellerPhone = '',
   currencySymbol = '₹',
   lang = 'en',
@@ -212,7 +213,7 @@ export default function CheckoutView({
   };
 
   const handleChatNow = () => {
-    const phone = resellerPhone || '919876543210';
+    const phone = whatsappTargetPhone || resellerPhone || '919876543210';
     const msg = encodeURIComponent('Hello! I have a question about the products.');
     window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
   };

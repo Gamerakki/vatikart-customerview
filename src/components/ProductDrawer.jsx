@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, ShoppingCart, Plus, Minus, Info } from 'lucide-react';
 import { getEffectivePrice } from '../services/pricing';
 
-export default function ProductDrawer({ isOpen, onClose, product, onAddToCart }) {
+export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, whatsappTargetPhone = '' }) {
   if (!product) return null;
 
   const sizeOptions = product.sizeOptions && product.sizeOptions.length > 0
@@ -68,6 +68,15 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
     : product;
 
   const isB2BMatrix = product.priceMode !== 'perSet' && product.colors && product.colors.length > 0 && product.sizes && product.sizes.length > 0;
+  const volumeDiscountRows = (Array.isArray(product.bulkDiscounts) ? product.bulkDiscounts : [])
+    .map((row) => ({
+      minQty: Number(row.min_qty ?? row.minQty ?? 0),
+      maxQty: row.max_qty ?? row.maxQty ?? null,
+      discountedPrice: row.discounted_price ?? row.discountedPrice ?? null,
+      discountPercent: row.discount_percent ?? row.discountPercent ?? null,
+    }))
+    .filter((row) => Number.isFinite(row.minQty) && row.minQty > 0 && row.discountedPrice != null)
+    .sort((a, b) => a.minQty - b.minQty);
 
   const handleCellChange = (colorName, sizeName, val) => {
     const num = Math.max(0, parseInt(val, 10) || 0);
@@ -136,7 +145,8 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
 
     const quoteMsg = `Hi! I would like to request a quote for the following bulk order of *${product.name}*:\n\n${breakdown}\n*Total Quantity*: ${totalQuantity} ${totalQuantity === 1 ? unitName : unitName + 's'}\n*Estimated Total*: ₹${totalAfterDiscount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}${discountAmount > 0 ? ` (with ${appliedDiscountPercent}% bulk discount applied)` : ''}\n\nPlease let me know the best pricing and delivery timeframe.`;
     
-    window.open(`https://wa.me/919876543210?text=${encodeURIComponent(quoteMsg)}`, '_blank');
+    const quotePhone = whatsappTargetPhone || '919876543210';
+    window.open(`https://wa.me/${quotePhone}?text=${encodeURIComponent(quoteMsg)}`, '_blank');
   };
 
   const renderB2BMatrix = () => {
@@ -437,6 +447,28 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart })
               </span>
             )}
           </div>
+
+          {volumeDiscountRows.length > 0 && (
+            <div style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: '12px', padding: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-primary)' }}>
+                Volume Discount Tiers
+              </span>
+              {volumeDiscountRows.map((tier, index) => {
+                const maxQty = tier.maxQty == null || String(tier.maxQty).trim() === '' ? null : Number(tier.maxQty);
+                const discountPrice = Number(tier.discountedPrice);
+                const rangeLabel = Number.isFinite(maxQty)
+                  ? `${tier.minQty} - ${maxQty}`
+                  : `${tier.minQty}+`;
+
+                return (
+                  <div key={`${tier.minQty}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.86rem' }}>
+                    <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Buy {rangeLabel}</span>
+                    <span style={{ color: 'var(--accent-primary)', fontWeight: 800 }}>₹{discountPrice.toFixed(2)} each</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Variant: Colors */}
           {!isB2BMatrix && product.priceMode !== 'perSet' && product.colors && product.colors.length > 0 && (
