@@ -9,6 +9,9 @@ export default function FilterSidebar({
   onSizeToggle,
   selectedColors,
   onColorToggle,
+  allTags,
+  selectedTags,
+  onTagToggle,
   maxPrice,
   onPriceChange,
   sortOption,
@@ -169,6 +172,36 @@ export default function FilterSidebar({
                   }}
                   title={color.name}
                 />
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Tags Section */}
+        <div>
+          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+            Tags
+          </h4>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {(allTags || []).map((tag) => {
+              const isSelected = (selectedTags || []).includes(tag);
+              return (
+                <button
+                  key={tag}
+                  onClick={() => onTagToggle(tag)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '999px',
+                    border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                    backgroundColor: isSelected ? 'var(--accent-light)' : 'transparent',
+                    color: isSelected ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                    fontSize: '0.8rem',
+                    fontWeight: isSelected ? 700 : 500,
+                    transition: 'var(--transition-fast)',
+                  }}
+                >
+                  {tag}
+                </button>
               );
             })}
           </div>

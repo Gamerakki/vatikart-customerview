@@ -106,6 +106,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [selectedColors, setSelectedColors] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
   const [maxPrice, setMaxPrice] = useState(350);
   const [sortOption, setSortOption] = useState('popularity');
 
@@ -177,6 +178,9 @@ export default function App() {
     if (params.has('colors')) {
       setSelectedColors(params.get('colors').split(','));
     }
+    if (params.has('tags')) {
+      setSelectedTags(params.get('tags').split(','));
+    }
     if (params.has('price')) {
       setMaxPrice(Number(params.get('price')));
     }
@@ -212,6 +216,12 @@ export default function App() {
     } else {
       params.delete('colors');
     }
+
+    if (selectedTags.length > 0) {
+      params.set('tags', selectedTags.join(','));
+    } else {
+      params.delete('tags');
+    }
     
     if (maxPrice !== 350) {
       params.set('price', maxPrice.toString());
@@ -233,7 +243,7 @@ export default function App() {
 
     const newRelativePathQuery = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
     window.history.replaceState(null, '', newRelativePathQuery);
-  }, [selectedCategory, searchTerm, selectedSizes, selectedColors, maxPrice, sortOption, selectedCatalogueId]);
+  }, [selectedCategory, searchTerm, selectedSizes, selectedColors, selectedTags, maxPrice, sortOption, selectedCatalogueId]);
 
 
   const priceCeiling = useMemo(() => {
@@ -269,6 +279,23 @@ export default function App() {
     return [...colorsMap.entries()].map(([name, hex]) => ({ name, hex }));
   }, [products]);
 
+  const allTags = useMemo(() => {
+    const tags = new Set();
+    products.forEach((product) => {
+      if (Array.isArray(product.tags)) {
+        product.tags.forEach((tag) => {
+          if (typeof tag === 'string' && tag.trim()) {
+            tags.add(tag.trim());
+          }
+        });
+      }
+      if (typeof product.tag === 'string' && product.tag.trim()) {
+        tags.add(product.tag.trim());
+      }
+    });
+    return [...tags].sort((a, b) => a.localeCompare(b));
+  }, [products]);
+
   // Filter & Sort Logic
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -302,6 +329,17 @@ export default function App() {
       );
     }
 
+    // Tag filter
+    if (selectedTags.length > 0) {
+      result = result.filter((p) => {
+        const productTags = [
+          ...(Array.isArray(p.tags) ? p.tags : []),
+          ...(p.tag ? [p.tag] : []),
+        ];
+        return productTags.some((tag) => selectedTags.includes(tag));
+      });
+    }
+
     // Price filter
     result = result.filter(p => p.price <= maxPrice);
 
@@ -315,7 +353,7 @@ export default function App() {
     } // 'popularity' is default and retains original dataset index ordering
 
     return result;
-  }, [products, searchTerm, selectedCategory, selectedSizes, selectedColors, maxPrice, sortOption]);
+  }, [products, searchTerm, selectedCategory, selectedSizes, selectedColors, selectedTags, maxPrice, sortOption]);
 
   // Size toggle helper
   const handleSizeToggle = (size) => {
@@ -331,12 +369,19 @@ export default function App() {
     );
   };
 
+  const handleTagToggle = (tagName) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagName) ? prev.filter((tag) => tag !== tagName) : [...prev, tagName]
+    );
+  };
+
   // Clear filters helper
   const handleClearAll = () => {
     setSelectedCategory('All');
     setSearchTerm('');
     setSelectedSizes([]);
     setSelectedColors([]);
+    setSelectedTags([]);
     setMaxPrice(350);
     setSortOption('popularity');
   };
@@ -479,10 +524,15 @@ export default function App() {
       const result = await bookPublicOrder(checkoutDetails);
       const orderId = result.order_id || ('VK-' + Math.floor(100000 + Math.random() * 900000));
       
-      // Update whatsapp message with the real Order ID
-      const updatedWhatsappMsg = checkoutDetails.whatsappMsg
-        ? checkoutDetails.whatsappMsg.replace('*New Order from VatiKart Storefront!*', `*New Order #${orderId} from VatiKart Storefront!*`)
-        : '';
+      const orderLink = `${window.location.origin}${window.location.pathname}?order_id=${encodeURIComponent(orderId)}`;
+      const formattedTotal = `₹${Number(checkoutDetails.total || 0).toFixed(2)}`;
+      const template = checkoutDetails.whatsappTemplate || 'Your order {order_id} of total {total} is confirmed. {link}';
+      const updatedWhatsappMsg = compileTemplate(template, {
+        ...(checkoutDetails.whatsappVars || {}),
+        order_id: orderId,
+        total: formattedTotal,
+        link: orderLink,
+      });
 
       // 2. Open WhatsApp message redirect
       window.open(updatedWhatsappMsg ? `https://wa.me/${resellerPhone || '919876543210'}?text=${encodeURIComponent(updatedWhatsappMsg)}` : `https://wa.me/${resellerPhone || '919876543210'}`, '_blank');
@@ -640,7 +690,7 @@ export default function App() {
         resellerName={resellerName}
         resellerPhone={resellerPhone}
         toggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-        hideSearch={!selectedCatalogueId}
+        hideSearch={false}
         lang={lang}
         onLanguageChange={setLang}
         t={t}
@@ -942,6 +992,9 @@ export default function App() {
                 onSizeToggle={handleSizeToggle}
                 selectedColors={selectedColors}
                 onColorToggle={handleColorToggle}
+                allTags={allTags}
+                selectedTags={selectedTags}
+                onTagToggle={handleTagToggle}
                 maxPrice={maxPrice}
                 onPriceChange={setMaxPrice}
                 sortOption={sortOption}
@@ -962,7 +1015,7 @@ export default function App() {
                 </h2>
                 
                 {/* Active filters pill display */}
-                {(selectedSizes.length > 0 || selectedColors.length > 0 || selectedCategory !== 'All' || searchTerm) && (
+                {(selectedSizes.length > 0 || selectedColors.length > 0 || selectedTags.length > 0 || selectedCategory !== 'All' || searchTerm) && (
                   <button
                     onClick={handleClearAll}
                     style={{ fontSize: '0.825rem', color: 'var(--accent-primary)', fontWeight: 600 }}

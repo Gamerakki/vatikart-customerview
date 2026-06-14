@@ -88,6 +88,9 @@ function mapApiProduct(item, index, margin = 0) {
             }
       )
     : [{ label: 'One Size', isSet: false, setQuantity: 1 }];
+  const tags = Array.isArray(item.tags)
+    ? item.tags.filter((tag) => typeof tag === 'string' && tag.trim()).map((tag) => tag.trim())
+    : [];
 
   return {
     id: item.product_id ?? item.id ?? index + 1,
@@ -102,6 +105,7 @@ function mapApiProduct(item, index, margin = 0) {
     rating: 4.5,
     reviewsCount: 0,
     tag: item.total_stock > 0 ? 'In Stock' : 'Out of Stock',
+    tags,
     description: item.description || item.slug || title,
     image:
       getFullImageUrl(item.img_path)

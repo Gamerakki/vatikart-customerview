@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, MessageCircle, Percent, Plus, Minus } from 'lucide-react';
 import { getEffectivePrice } from '../services/pricing';
+import { getStoreConfig } from '../services/storeApi';
 import { translations } from '../utils/i18n';
 
 export default function CheckoutView({
@@ -24,6 +25,7 @@ export default function CheckoutView({
   const [couponSuccess, setCouponSuccess] = useState('');
   const [itemComments, setItemComments] = useState({});
   const [formErrors, setFormErrors] = useState({});
+  const [orderConfirmText, setOrderConfirmText] = useState('Your order {order_id} of total {total} is confirmed. Track it here: {link}');
 
   const moqViolations = useMemo(
     () => cartItems.filter((item) => Number(item.quantity) < Math.max(1, Number(item.minimumOrderQty) || 1)),
@@ -36,6 +38,40 @@ export default function CheckoutView({
       setCouponSuccess('');
     }
   }, [hasMoqViolation]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTemplateSettings = async () => {
+      const { apiBase, token } = getStoreConfig();
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${apiBase}/whatsapp-template/settings`, {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) return;
+        const body = await response.json();
+        const template = body?.data?.order_confirm_text;
+
+        if (!cancelled && typeof template === 'string' && template.trim()) {
+          setOrderConfirmText(template.trim());
+        }
+      } catch {
+        // Keep default template when settings fetch fails.
+      }
+    };
+
+    void loadTemplateSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleCustomerChange = (e) => {
     const { name, value } = e.target;
@@ -150,18 +186,7 @@ export default function CheckoutView({
       }
     });
 
-    const msg = `*New Order from VatiKart Storefront!* 🛍️\n\n` +
-      `*Customer Details:*\n` +
-      `• *Name:* ${customer.name}\n` +
-      `• *Phone:* ${customer.phone}\n` +
-      `• *Address:* ${customer.address}\n\n` +
-      `*Order Details:*\n` +
-      `${orderListText}\n` +
-      `• *Subtotal:* ${currencySymbol}${subtotal.toFixed(2)}\n` +
-      (totalSavings > 0 ? `• *Discount Savings:* -${currencySymbol}${totalSavings.toFixed(2)}\n` : '') +
-      `• *GST Tax:* ${currencySymbol}${tax.toFixed(2)}\n` +
-      `• *Total Order Value:* *${currencySymbol}${totalAmount.toFixed(2)}*\n\n` +
-      `Please confirm my order and share payment details. Thank you!`;
+    const orderLink = `${window.location.origin}${window.location.pathname}`;
 
     onConfirmOrder({
       customer,
@@ -170,7 +195,13 @@ export default function CheckoutView({
       discount: totalSavings,
       tax,
       total: totalAmount,
-      whatsappMsg: msg,
+      whatsappTemplate: orderConfirmText,
+      whatsappVars: {
+        total: `${currencySymbol}${totalAmount.toFixed(2)}`,
+        link: orderLink,
+        order_id: '{order_id}',
+      },
+      orderSummaryText: orderListText,
     });
   };
 
