@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { loadStoreProducts, getStoreConfig, bookPublicOrder, requestAccessToCatalogue } from './services/storeApi';
+import { loadStoreProducts, getStoreConfig, bookPublicOrder, requestAccessToCatalogue, compileTemplate } from './services/storeApi';
 import Header from './components/Header';
 import FilterSidebar from './components/FilterSidebar';
 import ProductCard from './components/ProductCard';
@@ -30,6 +30,9 @@ export default function App() {
   const [bannerText, setBannerText] = useState(null);
   const [bannerActive, setBannerActive] = useState(false);
   const [bannerImgPath, setBannerImgPath] = useState(null);
+  const [wholesalePricingApplied, setWholesalePricingApplied] = useState(false);
+  const [wholesaleGroupName, setWholesaleGroupName] = useState(null);
+  const [catalogShareTemplate, setCatalogShareTemplate] = useState('Check out our catalog: {link}');
   const [accessError, setAccessError] = useState(null);
   const [accessRequestStatus, setAccessRequestStatus] = useState('idle'); // 'idle', 'submitting', 'submitted', 'approved'
   const [customerName, setCustomerName] = useState('');
@@ -57,6 +60,9 @@ export default function App() {
         setBannerText(result.bannerText ?? null);
         setBannerActive(result.bannerActive ?? false);
         setBannerImgPath(result.bannerImgPath ?? null);
+        setWholesalePricingApplied(Boolean(result.wholesalePricingApplied));
+        setWholesaleGroupName(result.wholesaleGroupName || null);
+        setCatalogShareTemplate(result.catalogShareTemplate || 'Check out our catalog: {link}');
 
         if (result.catalogueId && !selectedCatalogueId) {
           setSelectedCatalogueId(result.catalogueId);
@@ -638,6 +644,8 @@ export default function App() {
         lang={lang}
         onLanguageChange={setLang}
         t={t}
+        wholesalePricingApplied={wholesalePricingApplied}
+        wholesaleGroupName={wholesaleGroupName}
         onBackClick={!isDirectLink && selectedCatalogueId && catalogues.length > 1 ? () => {
           setSelectedCatalogueId(null);
           setProducts([]);
@@ -1017,6 +1025,9 @@ export default function App() {
           onBackToStore={() => setCurrentView('catalog')}
           onConfirmOrder={handleConfirmCheckout}
           resellerPhone={resellerPhone}
+          catalogShareTemplate={catalogShareTemplate}
+          compileTemplate={compileTemplate}
+          storefrontLink={window.location.href}
           currencySymbol="₹"
           lang={lang}
         />

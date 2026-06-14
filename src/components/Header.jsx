@@ -17,6 +17,8 @@ export default function Header({
   lang = 'en',
   onLanguageChange,
   t = (key) => key,
+  wholesalePricingApplied = false,
+  wholesaleGroupName = '',
 }) {
   const displayName = resellerName || storeName;
   const chatPhone = resellerPhone || '919876543210';
@@ -193,6 +195,20 @@ export default function Header({
                 Clear
               </button>
             )}
+          </div>
+        )}
+
+        {wholesalePricingApplied && (
+          <div style={{
+            backgroundColor: 'rgba(16, 185, 129, 0.14)',
+            border: '1px solid rgba(16, 185, 129, 0.35)',
+            color: 'var(--text-primary)',
+            borderRadius: '10px',
+            padding: '8px 12px',
+            fontSize: '0.82rem',
+            fontWeight: 700,
+          }}>
+            Wholesale Pricing Applied{wholesaleGroupName ? ` (${wholesaleGroupName})` : ''}
           </div>
         )}
       </div>

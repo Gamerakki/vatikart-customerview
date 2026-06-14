@@ -50,6 +50,14 @@ export function getStoreConfig() {
   };
 }
 
+export function compileTemplate(templateStr, varsObject = {}) {
+  if (!templateStr) return '';
+  return templateStr.replace(/\{([^}]+)\}/g, (_, key) => {
+    const value = varsObject[key.trim()];
+    return value == null ? '' : String(value);
+  });
+}
+
 function getFullImageUrl(path) {
   if (!path) return undefined;
   if (path.startsWith('http') || path.startsWith('file:') || path.startsWith('content:')) {
@@ -163,6 +171,9 @@ async function fetchWithAuthPaths(catalogueId, apiBase, token, margin = 0) {
         bannerText: body.bannerText ?? null,
         bannerActive: body.bannerActive ?? false,
         bannerImgPath: body.bannerImgPath ?? null,
+        wholesalePricingApplied: body.wholesalePricingApplied ?? false,
+        wholesaleGroupName: body.wholesaleGroupName ?? null,
+        catalogShareTemplate: body.catalogShareTemplate ?? null,
       };
     }
     if (Array.isArray(body)) {
@@ -244,6 +255,9 @@ export async function loadStoreProducts(overrideCatalogueId = undefined) {
         bannerText: live.bannerText ?? null,
         bannerActive: live.bannerActive ?? false,
         bannerImgPath: live.bannerImgPath ?? null,
+        wholesalePricingApplied: live.wholesalePricingApplied ?? false,
+        wholesaleGroupName: live.wholesaleGroupName ?? null,
+        catalogShareTemplate: live.catalogShareTemplate ?? null,
         message: products.length === 0 ? 'This catalogue has no products yet.' : null,
       };
     }
@@ -265,6 +279,9 @@ export async function loadStoreProducts(overrideCatalogueId = undefined) {
     companyInfo,
     catalogues,
     message: 'Catalogue not found or unable to fetch products.',
+    wholesalePricingApplied: false,
+    wholesaleGroupName: null,
+    catalogShareTemplate: null,
   };
 }
 
