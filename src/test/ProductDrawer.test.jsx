@@ -75,7 +75,7 @@ describe('ProductDrawer Component Tests', () => {
     expect(screen.getByText(/Select Size:/i)).toBeInTheDocument();
 
     // Verify individual size options are rendered
-    expect(screen.getByText('S')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'S' })).toBeInTheDocument();
     expect(screen.getByText('M')).toBeInTheDocument();
     expect(screen.getByText('L')).toBeInTheDocument();
 
