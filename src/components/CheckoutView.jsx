@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, MessageCircle, Percent, Plus, Minus } from 'lucide-react';
 import { getEffectivePrice } from '../services/pricing';
-import { getStoreConfig } from '../services/storeApi';
+import { compileTemplate, getStoreConfig } from '../services/storeApi';
 import { translations } from '../utils/i18n';
 
 export default function CheckoutView({
@@ -56,7 +56,7 @@ export default function CheckoutView({
 
         if (!response.ok) return;
         const body = await response.json();
-        const template = body?.data?.order_confirm_text;
+        const template = body?.data?.order_confirm_text || body?.data?.orderConfirmText;
 
         if (!cancelled && typeof template === 'string' && template.trim()) {
           setOrderConfirmText(template.trim());
@@ -187,6 +187,11 @@ export default function CheckoutView({
     });
 
     const orderLink = `${window.location.origin}${window.location.pathname}`;
+    const parsedTemplateMessage = compileTemplate(orderConfirmText, {
+      order_id: '{order_id}',
+      total: `${currencySymbol}${totalAmount.toFixed(2)}`,
+      link: orderLink,
+    });
 
     onConfirmOrder({
       customer,
@@ -196,6 +201,7 @@ export default function CheckoutView({
       tax,
       total: totalAmount,
       whatsappTemplate: orderConfirmText,
+      whatsappMsg: parsedTemplateMessage,
       whatsappVars: {
         total: `${currencySymbol}${totalAmount.toFixed(2)}`,
         link: orderLink,

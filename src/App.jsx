@@ -527,12 +527,18 @@ export default function App() {
       const orderLink = `${window.location.origin}${window.location.pathname}?order_id=${encodeURIComponent(orderId)}`;
       const formattedTotal = `₹${Number(checkoutDetails.total || 0).toFixed(2)}`;
       const template = checkoutDetails.whatsappTemplate || 'Your order {order_id} of total {total} is confirmed. {link}';
-      const updatedWhatsappMsg = compileTemplate(template, {
+      const compiledFromTemplate = compileTemplate(template, {
         ...(checkoutDetails.whatsappVars || {}),
         order_id: orderId,
         total: formattedTotal,
         link: orderLink,
       });
+      const updatedWhatsappMsg = checkoutDetails.whatsappMsg
+        ? checkoutDetails.whatsappMsg
+            .replace(/\{\s*order_id\s*\}/gi, orderId)
+            .replace(/\{\s*total\s*\}/gi, formattedTotal)
+            .replace(/\{\s*link\s*\}/gi, orderLink)
+        : compiledFromTemplate;
 
       // 2. Open WhatsApp message redirect
       window.open(updatedWhatsappMsg ? `https://wa.me/${resellerPhone || '919876543210'}?text=${encodeURIComponent(updatedWhatsappMsg)}` : `https://wa.me/${resellerPhone || '919876543210'}`, '_blank');
