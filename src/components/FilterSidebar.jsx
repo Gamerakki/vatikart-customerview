@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Filter, SlidersHorizontal, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function FilterSidebar({
+  t = (key) => key,
   products,
   categories,
   selectedCategory,
@@ -40,7 +41,7 @@ export default function FilterSidebar({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <SlidersHorizontal size={18} style={{ color: 'var(--accent-primary)' }} />
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Filters</h3>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{t('filters')}</h3>
         </div>
         <button
           onClick={onClearAll}
@@ -55,7 +56,7 @@ export default function FilterSidebar({
           title="Reset all filters"
         >
           <RotateCcw size={12} />
-          Reset
+          {t('reset')}
         </button>
       </div>
 
@@ -85,7 +86,7 @@ export default function FilterSidebar({
         {/* Sort Section */}
         <div>
           <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-            Sort By
+            {t('sort_by')}
           </h4>
           <select
             value={sortOption}
@@ -93,17 +94,17 @@ export default function FilterSidebar({
             className="form-input"
             style={{ fontSize: '0.85rem', cursor: 'pointer' }}
           >
-            <option value="popularity">Popularity (Best Sellers)</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
-            <option value="rating">Highest Rated</option>
+            <option value="popularity">{t('popularity')}</option>
+            <option value="price-low">{t('price_low')}</option>
+            <option value="price-high">{t('price_high')}</option>
+            <option value="rating">{t('highest_rated')}</option>
           </select>
         </div>
 
         {/* Categories Section */}
         <div>
           <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-            Category
+            {t('category')}
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <button
@@ -152,7 +153,7 @@ export default function FilterSidebar({
             style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}
           >
             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
-              Sizes
+              {t('sizes')}
             </h4>
             {isSizesOpen ? <ChevronUp size={15} color="var(--text-secondary)" /> : <ChevronDown size={15} color="var(--text-secondary)" />}
           </button>
@@ -183,7 +184,7 @@ export default function FilterSidebar({
             style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}
           >
             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
-              Colors
+              {t('colors')}
             </h4>
             {isColorsOpen ? <ChevronUp size={15} color="var(--text-secondary)" /> : <ChevronDown size={15} color="var(--text-secondary)" />}
           </button>
@@ -217,7 +218,7 @@ export default function FilterSidebar({
             style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}
           >
             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
-              Tags
+              {t('tags')}
             </h4>
             {isTagsOpen ? <ChevronUp size={15} color="var(--text-secondary)" /> : <ChevronDown size={15} color="var(--text-secondary)" />}
           </button>
@@ -252,7 +253,7 @@ export default function FilterSidebar({
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
-              Max Price
+              {t('max_price')}
             </h4>
             <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--accent-primary)' }}>
               ₹{maxPrice}

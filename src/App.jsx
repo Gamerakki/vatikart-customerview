@@ -919,7 +919,7 @@ export default function App() {
                     opacity: accessRequestStatus === 'submitting' ? 0.7 : 1
                   }}
                 >
-                  {accessRequestStatus === 'submitting' ? 'Submitting...' : 'Request Access'}
+                  {accessRequestStatus === 'submitting' ? t('submitting') : t('request_access_btn')}
                 </button>
                 {/* Back to catalogue grid */}
                 <button
@@ -936,7 +936,7 @@ export default function App() {
                     cursor: 'pointer',
                   }}
                 >
-                  ← Back to all catalogues
+                  {t('back_to_catalogues')}
                 </button>
               </form>
             )}
@@ -953,10 +953,10 @@ export default function App() {
           <main className="container" style={{ flex: 1, padding: '48px 24px', width: '100%' }}>
             <div style={{ marginBottom: '40px', textAlign: 'center' }}>
               <h2 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '8px' }}>
-                Welcome to our Store
+                  {t('welcome_to_store')}
               </h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
-                Browse our collections below
+                  {t('browse_collections')}
               </p>
             </div>
 
@@ -1053,9 +1053,9 @@ export default function App() {
                 <div style={{ color: 'var(--text-tertiary)' }}>
                   <ShoppingBag size={48} />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>No collections available</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>{t('no_collections')}</h3>
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', maxWidth: '360px' }}>
-                  This store has no published collections at the moment. Please check back later.
+                  {t('no_collections_desc')}
                 </p>
               </div>
             )}
@@ -1084,15 +1084,16 @@ export default function App() {
                 onClearAll={handleClearAll}
                 allSizes={allSizes}
                 allColors={allColors}
+                t={t}
               />
             </aside>
             {/* Product Catalog Grid Section */}
             <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                  {selectedCategory === 'All' ? 'All Products' : selectedCategory}
+                  {selectedCategory === 'All' ? t('all_products') : selectedCategory}
                   <span style={{ fontSize: '0.95rem', color: 'var(--text-tertiary)', fontWeight: 500, marginLeft: '10px' }}>
-                    ({filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} found)
+                    ({filteredProducts.length} {filteredProducts.length === 1 ? t('item_found') : t('items_found')})
                   </span>
                 </h2>
                 
@@ -1102,7 +1103,7 @@ export default function App() {
                     onClick={handleClearAll}
                     style={{ fontSize: '0.825rem', color: 'var(--accent-primary)', fontWeight: 600 }}
                   >
-                    Clear all active filters
+                    {t('clear_filters')}
                   </button>
                 )}
               </div>
@@ -1144,12 +1145,12 @@ export default function App() {
                   <div style={{ color: 'var(--text-tertiary)' }}>
                     <ShoppingBag size={48} />
                   </div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>No products found</h3>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>{t('no_products_found')}</h3>
                   <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', maxWidth: '360px' }}>
-                    We couldn't find any products matching your active filter criteria. Try relaxing your filters or resetting the search.
+                    {t('no_products_desc')}
                   </p>
                   <button onClick={handleClearAll} className="btn btn-primary" style={{ marginTop: '8px' }}>
-                    Reset Filters
+                    {t('reset_filters')}
                   </button>
                 </div>
               )}
@@ -1159,7 +1160,7 @@ export default function App() {
       ) : currentView === 'orders' ? (
         <main className="container" style={{ flex: 1, padding: '32px 24px', width: '100%', display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)' }}>My Orders</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)' }}>{t('my_orders_title')}</h2>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 className="btn btn-secondary"
@@ -1167,9 +1168,9 @@ export default function App() {
                   void loadCustomerOrders(lookupPhoneInput);
                 }}
               >
-                Refresh
+                {t('refresh')}
               </button>
-              <button className="btn btn-outline" onClick={() => setCurrentView('catalog')}>Back to Store</button>
+              <button className="btn btn-outline" onClick={() => setCurrentView('catalog')}>{t('back_to_store')}</button>
             </div>
           </div>
 
@@ -1184,7 +1185,7 @@ export default function App() {
             gap: '12px'
           }}>
             <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-              Check orders by phone number:
+              {t('check_orders_by_phone')}
             </label>
             <div style={{ display: 'flex', gap: '10px' }}>
               <input
@@ -1202,17 +1203,17 @@ export default function App() {
                 }}
                 style={{ height: '42px', padding: '0 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                Search
+                {t('search')}
               </button>
             </div>
           </div>
 
           {ordersLoading ? (
-            <div style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>Loading your orders...</div>
+            <div style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{t('loading_orders')}</div>
           ) : ordersError ? (
             <div style={{ color: 'var(--danger)', fontWeight: 700 }}>{ordersError}</div>
           ) : customerOrders.length === 0 ? (
-            <div style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>No orders found for your phone number yet. Enter your phone number above and click Search.</div>
+            <div style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{t('no_orders_found')}</div>
           ) : (
             <div style={{ display: 'grid', gap: '14px' }}>
               {customerOrders.map((order) => {
@@ -1245,7 +1246,7 @@ export default function App() {
                     </div>
 
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                      Date: {new Date(order.addedDate).toLocaleString()}
+                      {t('order_date')}: {new Date(order.addedDate).toLocaleString()}
                     </div>
 
                     <div style={{ display: 'grid', gap: '6px', fontSize: '0.86rem' }}>

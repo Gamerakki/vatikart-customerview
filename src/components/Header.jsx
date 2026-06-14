@@ -161,7 +161,7 @@ export default function Header({
                   fontSize: '0.85rem'
                 }}
               >
-                My Orders
+                {t('my_orders')}
               </button>
             )}
           </div>
