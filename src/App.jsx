@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { loadStoreProducts, getStoreConfig, bookPublicOrder, requestAccessToCatalogue, compileTemplate } from './services/storeApi';
 import Header from './components/Header';
 import FilterSidebar from './components/FilterSidebar';
@@ -41,6 +41,7 @@ export default function App() {
   const [customerPhone, setCustomerPhone] = useState(localStorage.getItem('vatikart_customer_phone') || '');
   const [pendingPrivateCatalogue, setPendingPrivateCatalogue] = useState(null); // for private catalogue click-to-request flow
   const socketRef = useRef(null);
+  const drawerViewRef = useRef({ productId: null, startedAt: 0 });
   const [lang, setLang] = useState(() => localStorage.getItem('vatikart_lang') || 'en');
 
   // Theme state
@@ -459,7 +460,7 @@ export default function App() {
     postAnalytics('CART_ADD', productWithVariant.id ?? null);
   };
 
-  const postAnalytics = (eventType, productId = null) => {
+  const postAnalytics = (eventType, productId = null, eventValue = null) => {
     if (!companyInfo?.companyId) return;
     const { apiBase } = getStoreConfig();
     fetch(`${apiBase}/analytics/log`, {
@@ -469,8 +470,19 @@ export default function App() {
         companyId: companyInfo.companyId,
         productId: productId ?? null,
         eventType,
+        eventValue,
       }),
     }).catch(() => {});
+  };
+
+  const handleCloseProductDrawer = () => {
+    if (drawerViewRef.current.productId && drawerViewRef.current.startedAt > 0) {
+      const seconds = Math.max(1, Math.round((Date.now() - drawerViewRef.current.startedAt) / 1000));
+      postAnalytics('VIEW_DURATION', drawerViewRef.current.productId, String(seconds));
+    }
+
+    drawerViewRef.current = { productId: null, startedAt: 0 };
+    setIsProductOpen(false);
   };
 
   const emitStorefrontActivity = (activityType, label, overrideCompanyId = null) => {
@@ -1080,6 +1092,10 @@ export default function App() {
                       product={product}
                       onViewDetails={(prod) => {
                         setSelectedProduct(prod);
+                        drawerViewRef.current = {
+                          productId: prod.id ?? null,
+                          startedAt: Date.now(),
+                        };
                         setIsProductOpen(true);
                         emitStorefrontActivity('view_product', prod.name);
                         postAnalytics('VIEW', prod.id ?? null);
@@ -1208,6 +1224,7 @@ export default function App() {
           storefrontLink={window.location.href}
           currencySymbol="₹"
           lang={lang}
+          storePolicies={companyInfo?.policies || ''}
         />
       )}
 
@@ -1226,7 +1243,7 @@ export default function App() {
       {/* Product Detail Drawer */}
       <ProductDrawer
         isOpen={isProductOpen}
-        onClose={() => setIsProductOpen(false)}
+        onClose={handleCloseProductDrawer}
         product={selectedProduct}
         onAddToCart={handleAddToCart}
         whatsappTargetPhone={whatsappTargetPhone}

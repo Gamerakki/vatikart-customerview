@@ -213,6 +213,7 @@ export async function loadStoreProducts(overrideCatalogueId = undefined) {
             logoImgPath: body.data.logo_img_path,
             salesPhone: body.data.sales_phone || body.data.salesPhone || null,
             supportPhone: body.data.support_phone || body.data.supportPhone || null,
+            policies: body.data.policies || null,
           };
           catalogues = body.data.catalogues || [];
           

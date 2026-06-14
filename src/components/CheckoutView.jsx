@@ -14,6 +14,7 @@ export default function CheckoutView({
   resellerPhone = '',
   currencySymbol = '₹',
   lang = 'en',
+  storePolicies = '',
 }) {
   const t = (key) => translations[lang]?.[key] || translations.en[key] || key;
   const [customer, setCustomer] = useState(() => {
@@ -27,6 +28,7 @@ export default function CheckoutView({
   const [itemComments, setItemComments] = useState({});
   const [formErrors, setFormErrors] = useState({});
   const [orderConfirmText, setOrderConfirmText] = useState('Your order {order_id} of total {total} is confirmed. Track it here: {link}');
+  const [showPolicies, setShowPolicies] = useState(false);
 
   const moqViolations = useMemo(
     () => cartItems.filter((item) => Number(item.quantity) < Math.max(1, Number(item.minimumOrderQty) || 1)),
@@ -406,6 +408,35 @@ export default function CheckoutView({
           <textarea name="address" value={customer.address} onChange={handleCustomerChange} placeholder="Street, City, Zip Code" className="form-input" rows="2" style={{ padding: '10px 14px', fontSize: '0.85rem', resize: 'vertical', fontFamily: 'inherit' }} />
           {formErrors.address && <span style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>{formErrors.address}</span>}
         </div>
+
+        {storePolicies?.trim() ? (
+          <div style={{ marginTop: '4px', border: '1px solid var(--border-color)', borderRadius: '10px', overflow: 'hidden' }}>
+            <button
+              type="button"
+              onClick={() => setShowPolicies((prev) => !prev)}
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                padding: '10px 12px',
+                background: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+                fontSize: '0.82rem',
+                fontWeight: 800,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>Store Terms & Policies</span>
+              <span>{showPolicies ? 'Hide' : 'View'}</span>
+            </button>
+            {showPolicies ? (
+              <div style={{ padding: '10px 12px', background: 'var(--card-bg)', color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+                {storePolicies}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
