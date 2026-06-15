@@ -151,11 +151,6 @@ async function tryFetchJson(url, options = {}) {
   const response = await fetch(url, {
     ...options,
     cache: 'no-store',
-    headers: {
-      ...(options.headers || {}),
-      'Cache-Control': 'no-cache, no-store, max-age=0',
-      Pragma: 'no-cache',
-    },
   });
   let body = null;
   try {
@@ -226,11 +221,7 @@ export async function loadStoreProducts(overrideCatalogueId = undefined) {
     try {
       const response = await fetch(`${apiBase}/company/resolve-subdomain/${subdomain}?_ts=${Date.now()}`, {
         cache: 'no-store',
-        headers: {
-          Accept: 'application/json',
-          'Cache-Control': 'no-cache, no-store, max-age=0',
-          Pragma: 'no-cache',
-        }
+        headers: { Accept: 'application/json' }
       });
       if (response.ok) {
         const body = await response.json();
