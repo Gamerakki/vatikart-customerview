@@ -229,12 +229,16 @@ export default function CheckoutView({
     const parsedTemplateMessage = compileTemplate(orderConfirmText, {
       order_id: '{order_id}',
       total: `${currencySymbol}${totalAmount.toFixed(2)}`,
-      link: orderLink,
+      link: '{link}',
     });
 
     onConfirmOrder({
       customer,
-      items: cartItems.map((item, idx) => ({ ...item, comment: itemComments[idx] })),
+      items: cartItems.map((item, idx) => ({
+        ...item,
+        price: getEffectivePrice(item, item.quantity, cartItems),
+        comment: itemComments[idx],
+      })),
       subtotal,
       discount: totalSavings,
       tax,
@@ -251,9 +255,10 @@ export default function CheckoutView({
   };
 
   const handleChatNow = () => {
-    const phone = whatsappTargetPhone || resellerPhone || '919876543210';
+    const rawPhone = whatsappTargetPhone || resellerPhone || '919876543210';
+    const sanitizedPhone = rawPhone.replace(/[^0-9]/g, '');
     const msg = encodeURIComponent('Hello! I have a question about the products.');
-    window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+    window.open(`https://wa.me/${sanitizedPhone}?text=${msg}`, '_blank');
   };
 
   if (cartItems.length === 0) {

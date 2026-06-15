@@ -177,7 +177,7 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, w
 
     const quoteMsg = `Hi! I would like to request a quote for the following bulk order of *${product.name}*:\n\n${breakdown}\n*Total Quantity*: ${totalQuantity} ${totalQuantity === 1 ? unitName : unitName + 's'}\n*Estimated Total*: ₹${totalAfterDiscount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}${discountAmount > 0 ? ` (with ${appliedDiscountPercent}% bulk discount applied)` : ''}\n\nPlease let me know the best pricing and delivery timeframe.`;
     
-    const quotePhone = whatsappTargetPhone || '919876543210';
+    const quotePhone = (whatsappTargetPhone || '919876543210').replace(/[^0-9]/g, '');
     window.open(`https://wa.me/${quotePhone}?text=${encodeURIComponent(quoteMsg)}`, '_blank');
   };
 
