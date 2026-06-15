@@ -592,7 +592,7 @@ export default function App() {
   const handleConfirmCheckout = async (checkoutDetails) => {
     try {
       // 1. Save order to database and get generated order_id
-      const result = await bookPublicOrder(checkoutDetails);
+      const result = await bookPublicOrder(checkoutDetails, selectedCatalogueId);
       const orderId = result.order_id || ('VK-' + Math.floor(100000 + Math.random() * 900000));
       
       const orderLink = `${window.location.origin}${window.location.pathname}?order_id=${encodeURIComponent(orderId)}`;

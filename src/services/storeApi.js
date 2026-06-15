@@ -319,8 +319,9 @@ export async function requestAccessToCatalogue(catalogueId, customerName, custom
   return body;
 }
 
-export async function bookPublicOrder(checkoutDetails) {
-  const { catalogueId, apiBase, margin } = getStoreConfig();
+export async function bookPublicOrder(checkoutDetails, catalogueIdOverride = null) {
+  const { catalogueId: configCatalogueId, apiBase, margin } = getStoreConfig();
+  const catalogueId = catalogueIdOverride || configCatalogueId;
   
   const payload = {
     catalogue_id: isNaN(parseInt(catalogueId, 10)) ? catalogueId : parseInt(catalogueId, 10),
