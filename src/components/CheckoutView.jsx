@@ -161,7 +161,7 @@ export default function CheckoutView({
 
   const productSavings = cartItems.reduce((acc, item) => {
     const originalPrice = Number(item.originalPrice || item.price || 0);
-    const effectivePrice = getEffectivePrice(item, item.quantity);
+    const effectivePrice = getEffectivePrice(item, item.quantity, cartItems);
     return acc + (originalPrice - effectivePrice) * Number(item.quantity || 0);
   }, 0);
 
@@ -170,7 +170,7 @@ export default function CheckoutView({
   const totalSavings = productSavings + couponSavings;
 
   const tax = cartItems.reduce((acc, item) => {
-    const effectivePrice = getEffectivePrice(item, item.quantity);
+    const effectivePrice = getEffectivePrice(item, item.quantity, cartItems);
     const itemSubtotal = effectivePrice * Number(item.quantity || 0);
     const gstRate = Number(item.gstRate ?? item.gst_rate ?? 0) || 0;
     return acc + itemSubtotal * (gstRate / 100) * (1 - appliedDiscount / 100);
@@ -188,7 +188,7 @@ export default function CheckoutView({
     let orderListText = '';
     cartItems.forEach((item, index) => {
       const commentText = itemComments[index] ? ` (Note: "${itemComments[index]}")` : '';
-      const effectivePrice = getEffectivePrice(item, item.quantity);
+      const effectivePrice = getEffectivePrice(item, item.quantity, cartItems);
 
       if (item.priceMode === 'perSet') {
         const packName = item.setName || `Set of ${item.setQuantity} Pieces`;
@@ -312,7 +312,7 @@ export default function CheckoutView({
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {cartItems.map((item, idx) => {
-            const effectivePrice = getEffectivePrice(item, item.quantity);
+            const effectivePrice = getEffectivePrice(item, item.quantity, cartItems);
             const originalPrice = Number(item.originalPrice || item.price || 0);
             const savings = originalPrice - effectivePrice;
             const savingsPct = originalPrice ? Math.round((savings / originalPrice) * 100) : 0;

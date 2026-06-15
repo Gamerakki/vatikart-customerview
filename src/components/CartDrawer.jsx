@@ -110,11 +110,11 @@ export default function CartDrawer({
   }, [holdExpired]);
 
   const subtotal = cartItems.reduce((acc, item) => {
-    const effectivePrice = getEffectivePrice(item, item.quantity);
+    const effectivePrice = getEffectivePrice(item, item.quantity, cartItems);
     return acc + (effectivePrice * item.quantity);
   }, 0);
   const tax = cartItems.reduce((acc, item) => {
-    const effectivePrice = getEffectivePrice(item, item.quantity);
+    const effectivePrice = getEffectivePrice(item, item.quantity, cartItems);
     return acc + getProductGstAmount(item, effectivePrice, item.quantity);
   }, 0);
   const roundedSubtotal = Number(subtotal.toFixed(2));
@@ -302,7 +302,7 @@ export default function CartDrawer({
                           </button>
                         </div>
                         <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
-                          ₹{(getEffectivePrice(item, item.quantity) * item.quantity).toFixed(2)}
+                          ₹{(getEffectivePrice(item, item.quantity, cartItems) * item.quantity).toFixed(2)}
                         </span>
                       </div>
 
