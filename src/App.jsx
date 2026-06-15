@@ -180,6 +180,10 @@ export default function App() {
       setCustomerOrders(Array.isArray(body.data) ? body.data : []);
       // If successful, cache this number so they don't need to re-type it next time
       localStorage.setItem('vatikart_customer_phone', phoneToUse);
+      const result = await loadStoreProducts(selectedCatalogueId);
+      if (result && result.products) {
+        setProducts(result.products);
+      }
     } catch (error) {
       setOrdersError(error instanceof Error ? error.message : 'Unable to load orders right now.');
       setCustomerOrders([]);
@@ -611,8 +615,8 @@ export default function App() {
             .replace(/\{\s*link\s*\}/gi, orderLink)
         : compiledFromTemplate;
 
-      // 2. Open WhatsApp message redirect
-      window.open(updatedWhatsappMsg ? `https://wa.me/${whatsappTargetPhone}?text=${encodeURIComponent(updatedWhatsappMsg)}` : `https://wa.me/${whatsappTargetPhone}`, '_blank');
+      const sanitizedTargetPhone = (whatsappTargetPhone || '').replace(/[^0-9]/g, '');
+      window.open(updatedWhatsappMsg ? `https://wa.me/${sanitizedTargetPhone}?text=${encodeURIComponent(updatedWhatsappMsg)}` : `https://wa.me/${sanitizedTargetPhone}`, '_blank');
       
       // 3. Open printable invoice modal receipt
       setInvoiceData({
@@ -654,6 +658,10 @@ export default function App() {
     try {
       await requestAccessToCatalogue(targetCatalogueId, customerName, customerPhone);
       localStorage.setItem('vatikart_customer_phone', customerPhone);
+      const result = await loadStoreProducts(selectedCatalogueId);
+      if (result && result.products) {
+        setProducts(result.products);
+      }
       setAccessRequestStatus('submitted');
       
       // Start polling for access approval (check every 5 sec)

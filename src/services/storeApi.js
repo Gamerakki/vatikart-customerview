@@ -101,7 +101,10 @@ function mapApiProduct(item, index, margin = 0) {
     gstRate: item.gst_rate != null ? Number(item.gst_rate) : 0,
     unitType: item.unit_type || null,
     minimumOrderQty: item.minimum_order_qty != null ? Number(item.minimum_order_qty) : 1,
-    bulkDiscounts: item.bulk_discounts || [],
+    bulkDiscounts: (item.bulk_discounts || []).map((d) => ({
+      ...d,
+      discounted_price: d.discounted_price != null ? Number((Number(d.discounted_price) * multiplier).toFixed(2)) : null,
+    })),
     rating: 4.5,
     reviewsCount: 0,
     tag: item.total_stock > 0 ? 'In Stock' : 'Out of Stock',
