@@ -148,7 +148,15 @@ function mapApiProduct(item, index, margin = 0) {
 }
 
 async function tryFetchJson(url, options = {}) {
-  const response = await fetch(url, options);
+  const response = await fetch(url, {
+    ...options,
+    cache: 'no-store',
+    headers: {
+      ...(options.headers || {}),
+      'Cache-Control': 'no-cache, no-store, max-age=0',
+      Pragma: 'no-cache',
+    },
+  });
   let body = null;
   try {
     body = await response.json();
@@ -166,6 +174,7 @@ async function tryFetchJson(url, options = {}) {
 
 async function fetchWithAuthPaths(catalogueId, apiBase, token, margin = 0) {
   const phone = localStorage.getItem('vatikart_customer_phone');
+  const cacheBust = Date.now();
   const headers = {
     Accept: 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -180,7 +189,8 @@ async function fetchWithAuthPaths(catalogueId, apiBase, token, margin = 0) {
   ];
 
   for (const path of paths) {
-    const body = await tryFetchJson(`${apiBase}${path}`, { headers });
+    const separator = path.includes('?') ? '&' : '?';
+    const body = await tryFetchJson(`${apiBase}${path}${separator}_ts=${cacheBust}`, { headers });
     if (body?.status && Array.isArray(body.data)) {
       return {
         products: body.data.map((item, index) => mapApiProduct(item, index, margin)),
@@ -214,8 +224,13 @@ export async function loadStoreProducts(overrideCatalogueId = undefined) {
 
   if (subdomain) {
     try {
-      const response = await fetch(`${apiBase}/company/resolve-subdomain/${subdomain}`, {
-        headers: { Accept: 'application/json' }
+      const response = await fetch(`${apiBase}/company/resolve-subdomain/${subdomain}?_ts=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          'Cache-Control': 'no-cache, no-store, max-age=0',
+          Pragma: 'no-cache',
+        }
       });
       if (response.ok) {
         const body = await response.json();
