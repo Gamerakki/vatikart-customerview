@@ -286,7 +286,7 @@ export default function CartDrawer({
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden' }}>
                           <button
-                            onClick={() => onUpdateQty(idx, item.quantity - 1)}
+                            onClick={() => onUpdateQty(idx, Math.max(Number(item.minimumOrderQty) || 1, item.quantity - 1))}
                             style={{ padding: '4px 9px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
                           >
                             <Minus size={12} />

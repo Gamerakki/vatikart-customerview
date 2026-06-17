@@ -232,6 +232,11 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd }) {
               (₹{(product.price / product.setQuantity).toFixed(0)} / piece)
             </span>
           )}
+          {product.minimumOrderQty > 1 && (
+            <span style={{background:'#f59e0b',color:'#fff',fontSize:'11px',padding:'2px 6px',borderRadius:'4px',fontWeight:700}}>
+              Min: {product.minimumOrderQty} {product.priceMode === 'perSet' ? 'sets' : 'pcs'}
+            </span>
+          )}
         </div>
 
       </div>

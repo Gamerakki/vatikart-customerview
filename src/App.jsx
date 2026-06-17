@@ -562,12 +562,14 @@ export default function App() {
       selectedSize: product.priceMode === 'perSet' ? null : (product.sizes && product.sizes.length > 0 ? product.sizes[0] : null),
       selectedColor: product.priceMode === 'perSet' ? null : (product.colors && product.colors.length > 0 ? product.colors[0] : null),
       selectedOptions: defaultOptions,
-      quantity: 1
+      quantity: Math.max(1, Number(product.minimumOrderQty) || 1)
     });
   };
 
   const handleUpdateQty = (index, newQty) => {
-    if (newQty <= 0) {
+    const cartItem = cart[index];
+    const moq = Math.max(1, Number(cartItem?.minimumOrderQty) || 1);
+    if (newQty < moq) {
       handleRemoveItem(index);
       return;
     }
