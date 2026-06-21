@@ -1,4 +1,4 @@
-// Dynamic product catalog from mybuisness.catalog.to
+// Fallback demo product catalog (not actively used — API data takes priority)
 export const products = [
   {
     "id": 1,
@@ -73,9 +73,9 @@ export const products = [
         "new ps"
       ]
     },
-    "image": "https://cdn.quicksell.co/-NXL4m3IuG_OxARrDi_6/products/-NvAvOvIdbwH807SjNkw.jpg",
+    "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop",
     "gallery": [
-      "https://cdn.quicksell.co/-NXL4m3IuG_OxARrDi_6/products/-NvAvOvIdbwH807SjNkw.jpg"
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop"
     ],
     "specs": {
       "Collection": "Aura Handbags Collection",
@@ -125,9 +125,9 @@ export const products = [
       }
     ],
     "options": {},
-    "image": "https://cdn.quicksell.co/-NXL4m3IuG_OxARrDi_6/products/-NvAvOvyeDknp74zoc7y.jpg",
+    "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop",
     "gallery": [
-      "https://cdn.quicksell.co/-NXL4m3IuG_OxARrDi_6/products/-NvAvOvyeDknp74zoc7y.jpg"
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop"
     ],
     "specs": {
       "Collection": "Aura Handbags Collection",
@@ -180,9 +180,9 @@ export const products = [
       }
     ],
     "options": {},
-    "image": "https://cdn.quicksell.co/-NXL4m3IuG_OxARrDi_6/products/-NvAvOwN3OZVNfMY6Xlq.jpg",
+    "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop",
     "gallery": [
-      "https://cdn.quicksell.co/-NXL4m3IuG_OxARrDi_6/products/-NvAvOwN3OZVNfMY6Xlq.jpg"
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop"
     ],
     "specs": {
       "Collection": "Aura Handbags Collection",
@@ -239,9 +239,9 @@ export const products = [
         "potli"
       ]
     },
-    "image": "https://cdn.quicksell.co/-NXL4m3IuG_OxARrDi_6/products/-NvAvOxBSKA5hQCu_j5G.jpg",
+    "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop",
     "gallery": [
-      "https://cdn.quicksell.co/-NXL4m3IuG_OxARrDi_6/products/-NvAvOxBSKA5hQCu_j5G.jpg"
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop"
     ],
     "specs": {
       "Collection": "Aura Handbags Collection",
@@ -301,9 +301,9 @@ export const products = [
         "both"
       ]
     },
-    "image": "https://cdn.quicksell.co/-NXL4m3IuG_OxARrDi_6/products/-NvAvOwn3gaOjXX44N9U.jpg",
+    "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop",
     "gallery": [
-      "https://cdn.quicksell.co/-NXL4m3IuG_OxARrDi_6/products/-NvAvOwn3gaOjXX44N9U.jpg"
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop"
     ],
     "specs": {
       "Collection": "Aura Handbags Collection",

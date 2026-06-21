@@ -1300,7 +1300,7 @@ export default function App() {
       {/* Footer copyright */}
       <footer style={{ borderTop: '1px solid var(--border-color)', padding: '24px 0', backgroundColor: 'var(--bg-secondary)' }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-          <span>© {new Date().getFullYear()} VatiKart Store. All rights reserved. Powered by QuickSell.</span>
+          <span>© {new Date().getFullYear()} VatiKart Store. All rights reserved. Powered by VatiKart.</span>
           <div style={{ display: 'flex', gap: '16px' }}>
             <a href="#privacy" style={{ hover: { color: 'var(--accent-primary)' } }}>Privacy Policy</a>
             <a href="#terms">Terms of Service</a>

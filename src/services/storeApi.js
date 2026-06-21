@@ -1,4 +1,4 @@
-import { products as fallbackProducts } from '../data/products';
+
 
 const DEFAULT_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://api.vatikart.in';
 
