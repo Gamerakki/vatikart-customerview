@@ -75,7 +75,18 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, w
       discountedPrice: row.discounted_price ?? row.discountedPrice ?? null,
       discountPercent: row.discount_percent ?? row.discountPercent ?? null,
     }))
-    .filter((row) => Number.isFinite(row.minQty) && row.minQty > 0 && row.discountedPrice != null)
+    .filter((row) => {
+      const minQtyValid = Number.isFinite(row.minQty) && row.minQty > 0;
+      if (!minQtyValid) return false;
+      const basePrice = Number(product.price || 0);
+      if (row.discountedPrice != null) {
+        return Number(row.discountedPrice) < basePrice;
+      }
+      if (row.discountPercent != null) {
+        return Number(row.discountPercent) > 0;
+      }
+      return false;
+    })
     .sort((a, b) => a.minQty - b.minQty);
 
   const getAvailableInventoryForCombo = (sizeOptionId, colorOptionId) => {
@@ -497,7 +508,10 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, w
               </span>
               {volumeDiscountRows.map((tier, index) => {
                 const maxQty = tier.maxQty == null || String(tier.maxQty).trim() === '' ? null : Number(tier.maxQty);
-                const discountPrice = Number(tier.discountedPrice);
+                const rawDiscountPrice = Number(tier.discountedPrice);
+                const discountPrice = (product.priceMode === 'perSet' && product.setQuantity)
+                  ? (rawDiscountPrice / product.setQuantity)
+                  : rawDiscountPrice;
                 const rangeLabel = Number.isFinite(maxQty)
                   ? `${tier.minQty} - ${maxQty}`
                   : `${tier.minQty}+`;

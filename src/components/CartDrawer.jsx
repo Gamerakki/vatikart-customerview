@@ -34,7 +34,18 @@ function getNextBulkDiscount(item) {
       minQty: Number(slab.min_qty) || 0,
       maxQty: slab.max_qty != null ? Number(slab.max_qty) : null,
     }))
-    .filter((slab) => slab.minQty > 0)
+    .filter((slab) => {
+      const minQtyValid = slab.minQty > 0;
+      if (!minQtyValid) return false;
+      const basePrice = Number(item.price || 0);
+      if (slab.discounted_price != null) {
+        return Number(slab.discounted_price) < basePrice;
+      }
+      if (slab.discount_percent != null) {
+        return Number(slab.discount_percent) > 0;
+      }
+      return false;
+    })
     .sort((a, b) => a.minQty - b.minQty);
 
   return slabs.find((slab) => quantity < slab.minQty) || null;

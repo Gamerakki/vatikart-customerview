@@ -16,9 +16,15 @@ export function getEffectivePrice(item, quantity, cartItems = []) {
       if (aggregateQuantity >= min && (max === null || aggregateQuantity <= max)) {
         if (slab.discounted_price != null) {
           // Ensure the slab price is properly scaled for set-based items
-          basePrice = Number(slab.discounted_price) * (item.priceMode === 'perSet' ? 1 : setMultiplier);
+          const slabPrice = Number(slab.discounted_price) * (item.priceMode === 'perSet' ? 1 : setMultiplier);
+          if (slabPrice < basePrice) {
+            basePrice = slabPrice;
+          }
         } else if (slab.discount_percent != null) {
-          basePrice = (Number(item.price) || 0) * (1 - Number(slab.discount_percent) / 100);
+          const pct = Number(slab.discount_percent);
+          if (pct > 0) {
+            basePrice = (Number(item.price) || 0) * (1 - pct / 100);
+          }
         }
       }
     }
