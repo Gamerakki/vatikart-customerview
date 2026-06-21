@@ -286,7 +286,14 @@ export default function CartDrawer({
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden' }}>
                           <button
-                            onClick={() => onUpdateQty(idx, Math.max(Number(item.minimumOrderQty) || 1, item.quantity - 1))}
+                            onClick={() => {
+                              const moq = Math.max(1, Number(item.minimumOrderQty) || 1);
+                              if (item.quantity <= moq) {
+                                // Already at minimum — do nothing, the remove button exists separately
+                                return;
+                              }
+                              onUpdateQty(idx, Math.max(moq, item.quantity - 1));
+                            }}
                             style={{ padding: '4px 9px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
                           >
                             <Minus size={12} />
@@ -305,6 +312,24 @@ export default function CartDrawer({
                           ₹{(getEffectivePrice(item, item.quantity, cartItems) * item.quantity).toFixed(2)}
                         </span>
                       </div>
+
+                      {Number(item.minimumOrderQty) > 1 && (
+                        <div style={{
+                          marginTop: '5px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.69rem',
+                          fontWeight: 700,
+                          color: '#f59e0b',
+                        }}>
+                          <span style={{
+                            width: '6px', height: '6px', borderRadius: '50%',
+                            backgroundColor: '#f59e0b', flexShrink: 0
+                          }} />
+                          Min order: {item.minimumOrderQty} {item.priceMode === 'perSet' ? 'sets' : 'pcs'}
+                        </div>
+                      )}
 
                       {nextSlab && (
                         <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
