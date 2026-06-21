@@ -52,6 +52,8 @@ export const translations = {
     price_low: 'Price: Low to High',
     price_high: 'Price: High to Low',
     highest_rated: 'Highest Rated',
+    download_pdf: 'Download PDF',
+    download_excel: 'Download Excel',
   },
   hi: {
     shopping_cart: 'कार्ट',
@@ -106,6 +108,8 @@ export const translations = {
     price_low: 'मूल्य: कम से अधिक',
     price_high: 'मूल्य: अधिक से कम',
     highest_rated: 'सर्वाधिक रेटेड',
+    download_pdf: 'PDF डाउनलोड करें',
+    download_excel: 'Excel डाउनलोड करें',
   },
   mr: {
     shopping_cart: 'कार्ट',
@@ -160,6 +164,8 @@ export const translations = {
     price_low: 'किंमत: कमी ते जास्त',
     price_high: 'किंमत: जास्त ते कमी',
     highest_rated: 'सर्वाधिक रेटिंग',
+    download_pdf: 'PDF डाउनलोड करा',
+    download_excel: 'Excel डाउनलोड करा',
   },
   gu: {
     shopping_cart: 'કાર્ટ',
@@ -214,6 +220,8 @@ export const translations = {
     price_low: 'ભાવ: ઓછો થી વધુ',
     price_high: 'ભાવ: વધુ થી ઓછો',
     highest_rated: 'સૌથી વધુ રેટેડ',
+    download_pdf: 'PDF ડાઉનલોડ કરો',
+    download_excel: 'Excel ડાઉનલોડ કરો',
   },
 };
 

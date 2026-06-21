@@ -1107,15 +1107,61 @@ export default function App() {
                   </span>
                 </h2>
                 
-                {/* Active filters pill display */}
-                {(selectedSizes.length > 0 || selectedColors.length > 0 || selectedTags.length > 0 || selectedCategory !== 'All' || searchTerm) && (
-                  <button
-                    onClick={handleClearAll}
-                    style={{ fontSize: '0.825rem', color: 'var(--accent-primary)', fontWeight: 600 }}
-                  >
-                    {t('clear_filters')}
-                  </button>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  {/* Download Buttons */}
+                  {selectedCatalogueId && products.length > 0 && (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <a
+                        href={`${getStoreConfig().apiBase}/catalogue/public/${selectedCatalogueId}/export/pdf?theme=corporate&columns=1`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-secondary"
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: '0.8rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          borderRadius: '20px',
+                          textDecoration: 'none',
+                          fontWeight: 700
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        {t('download_pdf')}
+                      </a>
+                      <a
+                        href={`${getStoreConfig().apiBase}/catalogue/public/${selectedCatalogueId}/export/excel`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-secondary"
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: '0.8rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          borderRadius: '20px',
+                          textDecoration: 'none',
+                          fontWeight: 700
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        {t('download_excel')}
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Active filters pill display */}
+                  {(selectedSizes.length > 0 || selectedColors.length > 0 || selectedTags.length > 0 || selectedCategory !== 'All' || searchTerm) && (
+                    <button
+                      onClick={handleClearAll}
+                      style={{ fontSize: '0.825rem', color: 'var(--accent-primary)', fontWeight: 600 }}
+                    >
+                      {t('clear_filters')}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Product Cards Grid */}
