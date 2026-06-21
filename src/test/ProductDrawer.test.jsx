@@ -54,10 +54,6 @@ const mockProductPerSet = {
   priceMode: 'perSet',
   setQuantity: 3,
   setName: 'Pack of 3',
-  setComposition: [
-    { size_label: 'S', color_label: 'Red', color_hex: '#ff0000', qty_in_set: 1 },
-    { size_label: 'M', color_label: 'Blue', color_hex: '#0000ff', qty_in_set: 2 }
-  ],
 };
 
 describe('ProductDrawer Component Tests', () => {
@@ -100,7 +96,7 @@ describe('ProductDrawer Component Tests', () => {
     expect(screen.queryByText(/Select Size:/i)).not.toBeInTheDocument();
   });
 
-  it('hides size and color selectors for perSet products, showing Set Composition Breakdown instead', () => {
+  it('hides size and color selectors for perSet products', () => {
     render(
       <ProductDrawer
         isOpen={true}
@@ -116,9 +112,5 @@ describe('ProductDrawer Component Tests', () => {
     // Verify Select Size selector is NOT rendered
     expect(screen.queryByText(/Select Size:/i)).not.toBeInTheDocument();
 
-    // Verify Set Composition Breakdown is rendered
-    expect(screen.getByText(/Set Composition Breakdown/i)).toBeInTheDocument();
-    expect(screen.getByText(/Red \/ Size S/i)).toBeInTheDocument();
-    expect(screen.getByText(/Blue \/ Size M/i)).toBeInTheDocument();
   });
 });

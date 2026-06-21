@@ -592,32 +592,6 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, w
             );
           })}
 
-          {/* Set Composition Breakdown */}
-          {product.priceMode === 'perSet' && product.setComposition && product.setComposition.length > 0 && (
-            <div style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: '12px', padding: '16px', border: '1px solid var(--border-color)' }}>
-              <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-primary)', marginBottom: '10px' }}>
-                Set Composition Breakdown
-              </span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {product.setComposition.map((item, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.88rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {item.color_hex && (
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: item.color_hex, display: 'inline-block', border: '1px solid rgba(0,0,0,0.1)' }} />
-                      )}
-                      <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
-                        {item.color_label} / Size {item.size_label}
-                      </span>
-                    </div>
-                    <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
-                      {item.qty_in_set} {item.qty_in_set === 1 ? 'pc' : 'pcs'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* B2B Bulk Order Matrix */}
           {isB2BMatrix && renderB2BMatrix()}
 

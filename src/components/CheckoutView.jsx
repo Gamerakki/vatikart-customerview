@@ -192,20 +192,10 @@ export default function CheckoutView({
 
       if (item.priceMode === 'perSet') {
         const packName = item.setName || `Set of ${item.setQuantity} Pieces`;
-        const compositionStr = item.setComposition && item.setComposition.length > 0
-          ? `\n   - Set Composition:\n${item.setComposition.map((c) => {
-              const sizeLabelStr = c.size_label || c.sizeLabel;
-              const colorLabelStr = c.color_label || c.colorLabel;
-              const qtyStr = c.qty_in_set || c.qtyInSet;
-              const totalQty = Number(qtyStr || 0) * Number(item.quantity || 0);
-              return `     * ${totalQty}x ${colorLabelStr} / Size ${sizeLabelStr}`;
-            }).join('\n')}`
-          : '';
-
         orderListText += `${index + 1}. *${item.name}*\n` +
           `   - Pack Type: ${packName}\n` +
           `   - Qty: ${item.quantity} ${item.quantity === 1 ? 'Set' : 'Sets'} (Total: ${Number(item.quantity || 0) * Number(item.setQuantity || 0)} Pieces)\n` +
-          `   - Rate: ${currencySymbol}${effectivePrice} / Set${compositionStr}${commentText}\n` +
+          `   - Rate: ${currencySymbol}${effectivePrice} / Set${commentText}\n` +
           `   - Subtotal: ${currencySymbol}${(effectivePrice * item.quantity).toFixed(2)}\n`;
       } else {
         let variantDetails = '';
@@ -341,15 +331,6 @@ export default function CheckoutView({
                         <>
                           <span>Pack : <strong style={{ color: 'var(--text-primary)' }}>{item.setName || `Set of ${item.setQuantity} pcs`}</strong></span>
                           <span>Total Units : <strong style={{ color: 'var(--text-primary)' }}>{Number(item.quantity || 0) * Number(item.setQuantity || 0)} pieces</strong></span>
-                          {item.setComposition && item.setComposition.length > 0 && (
-                            <div style={{ paddingLeft: '8px', borderLeft: '2px solid var(--border-color)', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              {item.setComposition.map((c, compIdx) => (
-                                <span key={compIdx} style={{ fontSize: '0.75rem' }}>
-                                  • {(c.qty_in_set || c.qtyInSet) * item.quantity}x {c.color_label || c.colorLabel} / Size {c.size_label || c.sizeLabel}
-                                </span>
-                              ))}
-                            </div>
-                          )}
                         </>
                       ) : (
                         <>

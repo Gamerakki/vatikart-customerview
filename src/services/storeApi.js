@@ -143,7 +143,6 @@ function mapApiProduct(item, index, margin = 0) {
     priceMode: item.price_mode || 'perPiece',
     setQuantity: item.set_quantity != null ? Number(item.set_quantity) : null,
     setName: item.set_name || null,
-    setComposition: item.set_composition || [],
   };
 }
 
