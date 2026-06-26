@@ -9,9 +9,19 @@ export function getEffectivePrice(item, quantity, cartItems = []) {
   let basePrice = Number(item.price) || 0;
   
   if (item.bulkDiscounts && item.bulkDiscounts.length > 0) {
+    let lastSlab = null;
+    let maxMinQty = -1;
     for (const slab of item.bulkDiscounts) {
       const min = Number(slab.min_qty) || 0;
-      const max = slab.max_qty != null ? Number(slab.max_qty) : null;
+      if (min > maxMinQty) {
+        maxMinQty = min;
+        lastSlab = slab;
+      }
+    }
+
+    for (const slab of item.bulkDiscounts) {
+      const min = Number(slab.min_qty) || 0;
+      const max = (slab === lastSlab) ? null : (slab.max_qty != null ? Number(slab.max_qty) : null);
       
       if (aggregateQuantity >= min && (max === null || aggregateQuantity <= max)) {
         if (slab.discounted_price != null) {

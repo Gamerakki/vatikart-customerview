@@ -90,6 +90,9 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, w
     .sort((a, b) => a.minQty - b.minQty);
 
   const getAvailableInventoryForCombo = (sizeOptionId, colorOptionId) => {
+    if (product.trackInventory === false) {
+      return Number.POSITIVE_INFINITY;
+    }
     const rows = Array.isArray(product.inventoryItems) ? product.inventoryItems : [];
     if (rows.length === 0) {
       return Number.POSITIVE_INFINITY;

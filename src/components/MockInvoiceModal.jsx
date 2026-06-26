@@ -10,6 +10,60 @@ export default function MockInvoiceModal({ isOpen, onClose, invoiceData }) {
     window.print();
   };
 
+  const handleDownloadCSV = () => {
+    const headers = [
+      'Order ID',
+      'Date',
+      'Customer Name',
+      'Customer Phone',
+      'Delivery Address',
+      'Item Name',
+      'SKU',
+      'Size',
+      'Color',
+      'Quantity',
+      'Unit Price',
+      'Total'
+    ];
+
+    const rows = items.map(item => {
+      const sizeStr = item.selectedSize || '';
+      const colorStr = item.selectedColor?.name || '';
+      const skuStr = item.sku || '';
+      const itemTotal = (item.price * item.quantity).toFixed(2);
+      
+      return [
+        orderId,
+        date,
+        customer.name,
+        customer.phone,
+        customer.address.replace(/\n/g, ' '),
+        item.name,
+        skuStr,
+        sizeStr,
+        colorStr,
+        item.quantity,
+        item.price.toFixed(2),
+        itemTotal
+      ].map(val => `"${String(val).replace(/"/g, '""')}"`);
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `order_${orderId}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div style={{
       position: 'fixed',
@@ -55,6 +109,14 @@ export default function MockInvoiceModal({ isOpen, onClose, invoiceData }) {
             <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>Order Invoice Generated</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              onClick={handleDownloadCSV}
+              className="btn btn-secondary"
+              style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Download size={14} />
+              Excel/CSV
+            </button>
             <button
               onClick={handlePrint}
               className="btn btn-secondary"

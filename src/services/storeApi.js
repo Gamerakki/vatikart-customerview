@@ -107,7 +107,8 @@ function mapApiProduct(item, index, margin = 0) {
     })),
     rating: 4.5,
     reviewsCount: 0,
-    tag: item.total_stock > 0 ? 'In Stock' : 'Out of Stock',
+    trackInventory: item.track_inventory !== false,
+    tag: (item.track_inventory === false || item.total_stock > 0) ? 'In Stock' : 'Out of Stock',
     tags,
     description: item.description || item.slug || title,
     image:
