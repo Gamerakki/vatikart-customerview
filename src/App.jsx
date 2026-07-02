@@ -10,7 +10,7 @@ import CheckoutView from './components/CheckoutView';
 import { ShoppingBag, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { translations } from './utils/i18n';
-import { requestNotificationPermissionAndGetToken } from './utils/firebase';
+import { requestNotificationPermissionAndGetToken, logStorefrontEvent, initRemoteConfig } from './utils/firebase';
 
 const ORDER_STEPS = ['UNCONFIRMED', 'CONFIRMED', 'ACCEPTED', 'COMPLETED'];
 
@@ -52,6 +52,9 @@ export default function App() {
   });
 
   useEffect(() => {
+    // Initialize Remote Config
+    void initRemoteConfig();
+
     (async () => {
       try {
         const token = await requestNotificationPermissionAndGetToken();
@@ -99,6 +102,11 @@ export default function App() {
           if (cfg.storeName) setStoreTitle(cfg.storeName);
         }
         emitStorefrontActivity('view_catalog', result.title || getStoreConfig().storeName || 'catalog', result.companyInfo?.companyId);
+        logStorefrontEvent('view_catalogue', {
+          catalogue_id: selectedCatalogueId,
+          title: result.title || getStoreConfig().storeName || 'catalog',
+          company_id: result.companyInfo?.companyId ? String(result.companyInfo.companyId) : undefined
+        });
         setAccessError(null);
       } catch (err) {
         if (cancelled) return;
@@ -506,6 +514,14 @@ export default function App() {
     setIsCartOpen(true);
     // Analytics
     postAnalytics('CART_ADD', productWithVariant.id ?? null);
+    logStorefrontEvent('add_to_cart', {
+      product_id: productWithVariant.id,
+      product_name: productWithVariant.name,
+      price: productWithVariant.price,
+      quantity: productWithVariant.quantity,
+      selected_size: productWithVariant.selectedSize || 'One Size',
+      selected_color: productWithVariant.selectedColor?.name || 'Default'
+    });
   };
 
   const postAnalytics = (eventType, productId = null, eventValue = null) => {
@@ -641,6 +657,16 @@ export default function App() {
       const sanitizedTargetPhone = (whatsappTargetPhone || '').replace(/[^0-9]/g, '');
       window.open(updatedWhatsappMsg ? `https://wa.me/${sanitizedTargetPhone}?text=${encodeURIComponent(updatedWhatsappMsg)}` : `https://wa.me/${sanitizedTargetPhone}`, '_blank');
       
+      // Log Firebase Checkout Event
+      logStorefrontEvent('checkout_whatsapp', {
+        order_id: orderId,
+        total: checkoutDetails.total,
+        subtotal: checkoutDetails.subtotal,
+        tax: checkoutDetails.tax,
+        discount: checkoutDetails.discount,
+        items_count: checkoutDetails.items.length
+      });
+
       // 3. Open printable invoice modal receipt
       setInvoiceData({
         customer: checkoutDetails.customer,
@@ -1201,6 +1227,12 @@ export default function App() {
                         setIsProductOpen(true);
                         emitStorefrontActivity('view_product', prod.name);
                         postAnalytics('VIEW', prod.id ?? null);
+                        logStorefrontEvent('view_product', {
+                          product_id: prod.id,
+                          product_name: prod.name,
+                          price: prod.price,
+                          category: prod.category
+                        });
                       }}
                       onQuickAdd={handleQuickAdd}
                     />

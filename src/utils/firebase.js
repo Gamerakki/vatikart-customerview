@@ -1,5 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getAnalytics, logEvent } from 'firebase/analytics';
+import { getRemoteConfig, fetchAndActivate, getValue } from 'firebase/remote-config';
 import { getStoreConfig } from '../services/storeApi';
 
 const firebaseConfig = {
@@ -14,12 +16,21 @@ const firebaseConfig = {
 
 let app = null;
 let messaging = null;
+let analytics = null;
+let remoteConfig = null;
 
 try {
   app = initializeApp(firebaseConfig);
   // Ensure we are in a browser environment with Service Worker support
-  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-    messaging = getMessaging(app);
+  if (typeof window !== 'undefined') {
+    if ('serviceWorker' in navigator) {
+      messaging = getMessaging(app);
+    }
+    analytics = getAnalytics(app);
+    remoteConfig = getRemoteConfig(app);
+    
+    // Set minimal settings for remote config (e.g. fetch interval)
+    remoteConfig.settings.minimumFetchIntervalMillis = 3600000; // 1 hour
   }
 } catch (err) {
   console.warn('[firebase] Init failed', err);
@@ -61,4 +72,33 @@ export function onForegroundMessage(callback) {
     console.log('[firebase] Foreground message received', payload);
     callback(payload);
   });
+}
+
+export function logStorefrontEvent(eventName, params = {}) {
+  if (!analytics) return;
+  try {
+    logEvent(analytics, eventName, params);
+  } catch (err) {
+    console.warn('[firebase] Logging event failed', err);
+  }
+}
+
+export async function initRemoteConfig() {
+  if (!remoteConfig) return;
+  try {
+    await fetchAndActivate(remoteConfig);
+    console.log('[firebase] Remote Config fetched and activated');
+  } catch (err) {
+    console.warn('[firebase] Remote Config fetch failed', err);
+  }
+}
+
+export function getRemoteConfigValue(key) {
+  if (!remoteConfig) return null;
+  try {
+    return getValue(remoteConfig, key).asString();
+  } catch (err) {
+    console.warn('[firebase] Get Remote Config value failed', err);
+    return null;
+  }
 }
