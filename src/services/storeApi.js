@@ -373,3 +373,23 @@ export async function bookPublicOrder(checkoutDetails, catalogueIdOverride = nul
 
   return result.data; // contains order_id and total
 }
+
+export async function registerCustomerPushToken(phone, pushToken) {
+  const { apiBase } = getStoreConfig();
+  try {
+    const response = await fetch(`${apiBase}/user/customer/push-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ phone, pushToken }),
+    });
+    if (!response.ok) {
+      console.warn('[storeApi] failed to save customer push token');
+    }
+  } catch (err) {
+    console.warn('[storeApi] push token registration error', err);
+  }
+}
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { loadStoreProducts, getStoreConfig, bookPublicOrder, requestAccessToCatalogue, compileTemplate } from './services/storeApi';
+import { loadStoreProducts, getStoreConfig, bookPublicOrder, requestAccessToCatalogue, compileTemplate, registerCustomerPushToken } from './services/storeApi';
 import Header from './components/Header';
 import FilterSidebar from './components/FilterSidebar';
 import ProductCard from './components/ProductCard';
@@ -10,6 +10,7 @@ import CheckoutView from './components/CheckoutView';
 import { ShoppingBag, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { translations } from './utils/i18n';
+import { requestNotificationPermissionAndGetToken } from './utils/firebase';
 
 const ORDER_STEPS = ['UNCONFIRMED', 'CONFIRMED', 'ACCEPTED', 'COMPLETED'];
 
@@ -43,11 +44,31 @@ export default function App() {
   const socketRef = useRef(null);
   const drawerViewRef = useRef({ productId: null, startedAt: 0 });
   const [lang, setLang] = useState(() => localStorage.getItem('vatikart_lang') || 'en');
+  const [fcmToken, setFcmToken] = useState(null);
 
   // Theme state
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('vatikart_theme') || 'dark';
   });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await requestNotificationPermissionAndGetToken();
+        if (token) {
+          setFcmToken(token);
+        }
+      } catch (err) {
+        console.warn('[firebase] Token registration skipped or failed', err);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (customerPhone && fcmToken) {
+      void registerCustomerPushToken(customerPhone, fcmToken);
+    }
+  }, [customerPhone, fcmToken]);
 
   useEffect(() => {
     let cancelled = false;
