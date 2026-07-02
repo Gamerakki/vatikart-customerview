@@ -1109,7 +1109,7 @@ export default function App() {
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                   {/* Download Buttons */}
-                  {selectedCatalogueId && products.length > 0 && (
+                  {selectedCatalogueId && products.length > 0 && companyInfo?.showDownloadButtons !== false && (
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <a
                         href={`${getStoreConfig().apiBase}/catalogue/public/${selectedCatalogueId}/export/pdf?theme=corporate&columns=1`}

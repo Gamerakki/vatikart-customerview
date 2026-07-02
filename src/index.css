@@ -703,3 +703,22 @@ button {
   }
 }
 
+button,
+a,
+input,
+select,
+textarea,
+.b2b-matrix-stepper-btn {
+  touch-action: manipulation;
+}
+
+@media screen and (max-width: 768px) {
+  input,
+  select,
+  textarea,
+  .form-input,
+  .b2b-matrix-stepper-input {
+    font-size: 16px !important;
+  }
+}
+

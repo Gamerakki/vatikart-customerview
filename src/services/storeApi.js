@@ -233,6 +233,7 @@ export async function loadStoreProducts(overrideCatalogueId = undefined) {
             salesPhone: body.data.sales_phone || body.data.salesPhone || null,
             supportPhone: body.data.support_phone || body.data.supportPhone || null,
             policies: body.data.policies || null,
+            showDownloadButtons: body.data.show_download_buttons ?? true,
           };
           catalogues = body.data.catalogues || [];
           
