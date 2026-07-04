@@ -8,6 +8,8 @@ import CartDrawer from './components/CartDrawer';
 import MockInvoiceModal from './components/MockInvoiceModal';
 import CheckoutView from './components/CheckoutView';
 import BuyerAuthModal from './components/BuyerAuthModal';
+import VoiceOrderMic from './components/VoiceOrderMic';
+import VideoFeed from './components/VideoFeed';
 import { ShoppingBag, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { translations } from './utils/i18n';
@@ -246,6 +248,7 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isProductOpen, setIsProductOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isVideoModeOpen, setIsVideoModeOpen] = useState(false);
   const [invoiceData, setInvoiceData] = useState(null);
   const [currentView, setCurrentView] = useState('catalog'); // 'catalog' | 'checkout' | 'orders'
   const [customerOrders, setCustomerOrders] = useState([]);
@@ -819,6 +822,25 @@ export default function App() {
       selectedColor: product.priceMode === 'perSet' ? null : (product.colors && product.colors.length > 0 ? product.colors[0] : null),
       selectedOptions: defaultOptions,
       quantity: Math.max(1, Number(product.minimumOrderQty) || 1)
+    });
+  };
+
+  const handleVoiceAdd = (product, qty = 1) => {
+    const defaultOptions = {};
+    if (product.options) {
+      Object.entries(product.options).forEach(([key, values]) => {
+        if (values && values.length > 0) {
+          defaultOptions[key] = values[0];
+        }
+      });
+    }
+    const moq = Math.max(1, Number(product.minimumOrderQty) || 1);
+    handleAddToCart({
+      ...product,
+      selectedSize: product.priceMode === 'perSet' ? null : (product.sizes && product.sizes.length > 0 ? product.sizes[0] : null),
+      selectedColor: product.priceMode === 'perSet' ? null : (product.colors && product.colors.length > 0 ? product.colors[0] : null),
+      selectedOptions: defaultOptions,
+      quantity: Math.max(moq, qty),
     });
   };
 
@@ -1436,6 +1458,25 @@ export default function App() {
                 </h2>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  {products.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsVideoModeOpen(true)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        backgroundColor: '#EC4899',
+                        color: '#FFF',
+                        fontWeight: 'bold',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                      }}
+                    >
+                      🎬 Video Shopping
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => {
@@ -1515,6 +1556,13 @@ export default function App() {
                   )}
                 </div>
               </div>
+
+              {products.length > 0 && (
+                <VoiceOrderMic
+                  products={filteredProducts.length > 0 ? filteredProducts : products}
+                  onAddToCart={handleVoiceAdd}
+                />
+              )}
 
               {/* Product Cards Grid */}
               {filteredProducts.length > 0 ? (
@@ -1865,6 +1913,31 @@ export default function App() {
       `}</style>
 
       <BuyerAuthModal isOpen={showAuthModal} onSubmit={handleAuthSubmit} />
+
+      {isVideoModeOpen && (
+        <VideoFeed
+          products={filteredProducts.length > 0 ? filteredProducts : products}
+          onClose={() => setIsVideoModeOpen(false)}
+          onAddVariantToCart={(item) => {
+            const baseProduct = products.find((p) => p.id === item.id);
+            if (baseProduct) {
+              handleAddToCart({
+                ...baseProduct,
+                selectedSize: item.selectedSize,
+                selectedColor: item.selectedColor,
+                selectedOptions: {},
+                quantity: item.quantity,
+              });
+            } else {
+              handleAddToCart({
+                ...item,
+                selectedOptions: {},
+              });
+            }
+            setIsVideoModeOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
