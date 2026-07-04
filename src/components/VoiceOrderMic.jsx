@@ -10,6 +10,8 @@ const FILLER_KEYWORDS = [
   'add', 'to', 'cart', 'please', 'want', 'buy', 'item', 'quantity', 'quantity of',
   'kar do', 'kar', 'do', 'chahiye', 'le lo', 'le', 'lo', 'daal do', 'daal', 'de', 'bhai', 'ek',
   'kara', 'pahije', 'paahije', 'ghya', 'dya', 'taak', 'ghe',
+  'piece', 'pieces', 'pc', 'pcs', 'of', 'in', 'box', 'boxes', 'pack', 'packs', 'qty',
+  'mai', 'me', 'mein', 'dalo', 'daalo', 'patra', 'set', 'sets', 'dal'
 ];
 
 export default function VoiceOrderMic({ products, onAddToCart }) {
@@ -50,14 +52,28 @@ export default function VoiceOrderMic({ products, onAddToCart }) {
 
     console.log('[VoiceParser] Spoken:', rawWords, 'Keywords:', keywords);
 
-    const matchedProduct = productsRef.current.find((prod) => {
+    // Scored keyword matching engine
+    let bestProduct = null;
+    let highestScore = 0;
+
+    productsRef.current.forEach((prod) => {
       const prodName = prod.name.toLowerCase();
-      return keywords.every((kw) => prodName.includes(kw));
+      let score = 0;
+      keywords.forEach((kw) => {
+        if (prodName.includes(kw)) {
+          score += 1;
+        }
+      });
+
+      if (score > highestScore) {
+        highestScore = score;
+        bestProduct = prod;
+      }
     });
 
-    if (matchedProduct) {
-      onAddToCartRef.current(matchedProduct, qty);
-      setMatchStatus(`Added ${qty}x ${matchedProduct.name} to cart! 🎉`);
+    if (bestProduct && highestScore > 0) {
+      onAddToCartRef.current(bestProduct, qty);
+      setMatchStatus(`Added ${qty}x ${bestProduct.name} to cart! 🎉`);
     } else {
       setMatchStatus(`No product found matching "${keywords.join(' ')}"`);
     }
