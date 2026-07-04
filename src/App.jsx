@@ -15,6 +15,71 @@ import { requestNotificationPermissionAndGetToken, logStorefrontEvent, initRemot
 
 const ORDER_STEPS = ['UNCONFIRMED', 'CONFIRMED', 'ACCEPTED', 'COMPLETED'];
 
+const THEME_TOKENS = {
+  modern: {
+    fontFamily: '"Inter", sans-serif',
+    accent: '#0D9488',
+    bgPrimary: '#0F172A',
+    bgSecondary: '#1E293B',
+    textPrimary: '#F1F5F9',
+    textSecondary: '#94A3B8',
+    cardRadius: '12px',
+    cardBorder: '1px solid #334155',
+    cardHoverTransform: 'translateY(-4px)',
+    cardHoverShadow: '0 12px 20px -8px rgba(0,0,0,0.4)',
+  },
+  fashion: {
+    fontFamily: '"Playfair Display", "Georgia", serif',
+    accent: '#B45309',
+    bgPrimary: '#FAF7F2',
+    bgSecondary: '#F3EFE6',
+    textPrimary: '#1A1816',
+    textSecondary: '#5A544F',
+    cardRadius: '0px',
+    cardBorder: '1px solid #E5E1D8',
+    cardHoverTransform: 'scale(1.015)',
+    cardHoverShadow: '0 4px 12px rgba(27,24,22,0.06)',
+  },
+  toy: {
+    fontFamily: '"Quicksand", sans-serif',
+    accent: '#FB7185',
+    bgPrimary: '#EFF6FF',
+    bgSecondary: '#DBEAFE',
+    textPrimary: '#1E3A8A',
+    textSecondary: '#4B5563',
+    cardRadius: '24px',
+    cardBorder: '2px dashed #93C5FD',
+    cardHoverTransform: 'scale(1.05) rotate(1deg)',
+    cardHoverShadow: '0 10px 25px -5px rgba(30,58,138,0.12)',
+  },
+};
+
+const TOY_KEYWORDS = ['toy', 'kid', 'baby', 'play', 'doll', 'game', 'bear', 'child', 'toddler', 'learning', 'plush', 'soft toy', 'gift', 'fun'];
+const FASHION_KEYWORDS = ['cloth', 'dress', 'shirt', 'apparel', 'wear', 'fashion', 'boutique', 'silk', 'suit', 'shoe', 'jewelry', 'saree', 'pant', 't-shirt', 'jean', 'jacket', 'kurti', 'clothing', 'designer', 'cotton'];
+
+function detectTheme(title = '', description = '', products = []) {
+  const text = `${title} ${description} ${products.map((p) => `${p.name} ${p.category || ''}`).join(' ')}`.toLowerCase();
+
+  let toyScore = 0;
+  let fashionScore = 0;
+
+  TOY_KEYWORDS.forEach((kw) => {
+    const regex = new RegExp(`\\b${kw}`, 'g');
+    const matches = text.match(regex);
+    if (matches) toyScore += matches.length;
+  });
+
+  FASHION_KEYWORDS.forEach((kw) => {
+    const regex = new RegExp(`\\b${kw}`, 'g');
+    const matches = text.match(regex);
+    if (matches) fashionScore += matches.length;
+  });
+
+  if (toyScore > fashionScore && toyScore > 0) return 'toy';
+  if (fashionScore > toyScore && fashionScore > 0) return 'fashion';
+  return 'modern';
+}
+
 export default function App() {
   const [selectedCatalogueId, setSelectedCatalogueId] = useState(() => {
     return getStoreConfig().catalogueId;
@@ -51,6 +116,7 @@ export default function App() {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('vatikart_theme') || 'dark';
   });
+  const [storefrontTheme, setStorefrontTheme] = useState('modern');
 
   useEffect(() => {
     // Initialize Remote Config
@@ -91,6 +157,15 @@ export default function App() {
         setWholesalePricingApplied(Boolean(result.wholesalePricingApplied));
         setWholesaleGroupName(result.wholesaleGroupName || null);
         setCatalogShareTemplate(result.catalogShareTemplate || 'Check out our catalog: {link}');
+
+        const detected = detectTheme(result.title, result.message || '', result.products || []);
+        const queryParams = new URLSearchParams(window.location.search);
+        const forcedTemplate = queryParams.get('template') || queryParams.get('theme');
+        if (forcedTemplate && ['modern', 'fashion', 'toy'].includes(forcedTemplate)) {
+          setStorefrontTheme(forcedTemplate);
+        } else {
+          setStorefrontTheme(detected);
+        }
 
         if (result.catalogueId && !selectedCatalogueId) {
           setSelectedCatalogueId(result.catalogueId);
@@ -910,8 +985,47 @@ export default function App() {
     );
   }
 
+  const currentTokens = THEME_TOKENS[storefrontTheme] || THEME_TOKENS.modern;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <style>{`
+        :root {
+          --font-family-store: ${currentTokens.fontFamily};
+          --accent-primary: ${currentTokens.accent};
+          --bg-primary: ${currentTokens.bgPrimary};
+          --bg-secondary: ${currentTokens.bgSecondary};
+          --text-primary: ${currentTokens.textPrimary};
+          --text-secondary: ${currentTokens.textSecondary};
+          --card-radius: ${currentTokens.cardRadius};
+          --card-border: ${currentTokens.cardBorder};
+          --card-hover-transform: ${currentTokens.cardHoverTransform};
+          --card-hover-shadow: ${currentTokens.cardHoverShadow};
+        }
+
+        body {
+          font-family: var(--font-family-store) !important;
+          background-color: var(--bg-primary) !important;
+          color: var(--text-primary) !important;
+          transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        .grid-auto > div, .product-card-root {
+          border-radius: var(--card-radius) !important;
+          border: var(--card-border) !important;
+          background-color: var(--bg-secondary) !important;
+          transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease !important;
+        }
+
+        .grid-auto > div:hover, .product-card-root:hover {
+          transform: var(--card-hover-transform) !important;
+          box-shadow: var(--card-hover-shadow) !important;
+        }
+
+        header, footer, nav {
+          font-family: var(--font-family-store) !important;
+        }
+      `}</style>
 
       {/* ── Text Announcement Banner ── */}
       {bannerActive && bannerText && (

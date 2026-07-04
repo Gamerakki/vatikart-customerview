@@ -24,7 +24,7 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd, compan
   };
 
   return (
-    <div className="glass-card animate-slide-up" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <div className="glass-card product-card-root animate-slide-up" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       
       {/* Product Image Container */}
       <div style={{ position: 'relative', overflow: 'hidden', paddingBottom: '100%', background: 'var(--bg-tertiary)' }}>
