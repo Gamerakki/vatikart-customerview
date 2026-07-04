@@ -27,6 +27,9 @@ const THEME_TOKENS = {
     cardBorder: '1px solid #334155',
     cardHoverTransform: 'translateY(-4px)',
     cardHoverShadow: '0 12px 20px -8px rgba(0,0,0,0.4)',
+    imageAspectRatio: '1 / 1',
+    imageObjectFit: 'contain',
+    cardClipPath: 'none',
   },
   fashion: {
     fontFamily: '"Playfair Display", "Georgia", serif',
@@ -39,6 +42,9 @@ const THEME_TOKENS = {
     cardBorder: '1px solid #E5E1D8',
     cardHoverTransform: 'scale(1.015)',
     cardHoverShadow: '0 4px 12px rgba(27,24,22,0.06)',
+    imageAspectRatio: '3 / 4',
+    imageObjectFit: 'cover',
+    cardClipPath: 'none',
   },
   toy: {
     fontFamily: '"Quicksand", sans-serif',
@@ -51,6 +57,24 @@ const THEME_TOKENS = {
     cardBorder: '2px dashed #93C5FD',
     cardHoverTransform: 'scale(1.05) rotate(1deg)',
     cardHoverShadow: '0 10px 25px -5px rgba(30,58,138,0.12)',
+    imageAspectRatio: '1 / 1',
+    imageObjectFit: 'contain',
+    cardClipPath: 'none',
+  },
+  organic: {
+    fontFamily: '"Inter", sans-serif',
+    accent: '#10B981',
+    bgPrimary: '#F0FDF4',
+    bgSecondary: '#FFFFFF',
+    textPrimary: '#064E3B',
+    textSecondary: '#374151',
+    cardRadius: '8px 32px 8px 32px',
+    cardBorder: '1px solid #A7F3D0',
+    cardHoverTransform: 'translateY(-4px) scale(1.01)',
+    cardHoverShadow: '0 10px 20px -8px rgba(6,78,59,0.1)',
+    imageAspectRatio: '1 / 1',
+    imageObjectFit: 'contain',
+    cardClipPath: 'none',
   },
 };
 
@@ -161,7 +185,7 @@ export default function App() {
         const detected = detectTheme(result.title, result.message || '', result.products || []);
         const queryParams = new URLSearchParams(window.location.search);
         const forcedTemplate = queryParams.get('template') || queryParams.get('theme');
-        if (forcedTemplate && ['modern', 'fashion', 'toy'].includes(forcedTemplate)) {
+        if (forcedTemplate && ['modern', 'fashion', 'toy', 'organic'].includes(forcedTemplate)) {
           setStorefrontTheme(forcedTemplate);
         } else {
           setStorefrontTheme(detected);
@@ -1001,6 +1025,9 @@ export default function App() {
           --card-border: ${currentTokens.cardBorder};
           --card-hover-transform: ${currentTokens.cardHoverTransform};
           --card-hover-shadow: ${currentTokens.cardHoverShadow};
+          --image-aspect-ratio: ${currentTokens.imageAspectRatio};
+          --image-object-fit: ${currentTokens.imageObjectFit};
+          --card-clip-path: ${currentTokens.cardClipPath};
         }
 
         body {
@@ -1020,6 +1047,26 @@ export default function App() {
         .grid-auto > div:hover, .product-card-root:hover {
           transform: var(--card-hover-transform) !important;
           box-shadow: var(--card-hover-shadow) !important;
+        }
+
+        .product-card-image-wrap {
+          position: relative !important;
+          width: 100% !important;
+          overflow: hidden !important;
+          padding-bottom: 0px !important;
+          aspect-ratio: var(--image-aspect-ratio) !important;
+          clip-path: var(--card-clip-path) !important;
+        }
+
+        .product-card-image-wrap img {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: var(--image-object-fit) !important;
+          transition: transform 0.5s ease !important;
+        }
+
+        .product-card-image-wrap:hover img {
+          transform: scale(1.06) !important;
         }
 
         header, footer, nav {

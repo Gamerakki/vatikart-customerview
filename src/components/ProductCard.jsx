@@ -27,7 +27,7 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd, compan
     <div className="glass-card product-card-root animate-slide-up" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       
       {/* Product Image Container */}
-      <div style={{ position: 'relative', overflow: 'hidden', paddingBottom: '100%', background: 'var(--bg-tertiary)' }}>
+      <div className="product-card-image-wrap" style={{ backgroundColor: 'var(--bg-primary)' }}>
         {product.tag && (
           <span
             className="badge"
@@ -61,28 +61,18 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd, compan
           </span>
         )}
 
-        <div className="design-watermark-wrapper" style={{ position: 'absolute', inset: 0 }}>
-          <img
-            src={product.image}
-            alt={product.name}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
-            }}
-            className="product-card-img"
-            onError={(e) => {
-              e.target.src = `https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80`;
-            }}
-          />
-          {companyName ? (
-            <div className="design-watermark-overlay">{companyName}</div>
-          ) : null}
-        </div>
+        <img
+          src={product.image}
+          alt={product.name}
+          style={{ display: 'block' }}
+          onError={(e) => {
+            e.target.src = `https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80`;
+          }}
+        />
+
+        {companyName ? (
+          <div className="design-watermark-overlay">{companyName}</div>
+        ) : null}
 
         {/* Hover Action Overlay */}
         <div
@@ -121,7 +111,7 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd, compan
             <Eye size={14} />
             Quick View
           </button>
-          
+
           <button
             onClick={() => !isOutOfStock && onQuickAdd(product)}
             disabled={isOutOfStock}
@@ -246,9 +236,6 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd, compan
 
       {/* Global hover scripts style overrides */}
       <style>{`
-        .glass-card:hover .product-card-img {
-          transform: scale(1.08) !important;
-        }
         .glass-card:hover .product-card-overlay {
           opacity: 1 !important;
           transform: translateY(0) !important;
