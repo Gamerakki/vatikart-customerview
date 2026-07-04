@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, ShoppingCart, Plus, Minus, Info } from 'lucide-react';
 import { getEffectivePrice } from '../services/pricing';
+import VariantGridMatrix from './VariantGridMatrix';
 
-export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, whatsappTargetPhone = '' }) {
+export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, onAddMatrixToCart, whatsappTargetPhone = '' }) {
   if (!product) return null;
 
   const sizeOptions = product.sizeOptions && product.sizeOptions.length > 0
@@ -610,7 +611,10 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, w
           })}
 
           {/* B2B Bulk Order Matrix */}
-          {isB2BMatrix && renderB2BMatrix()}
+          {isB2BMatrix && onAddMatrixToCart && (
+            <VariantGridMatrix product={product} onAddMatrixToCart={onAddMatrixToCart} />
+          )}
+          {isB2BMatrix && !onAddMatrixToCart && renderB2BMatrix()}
 
           {/* Description */}
           <div>

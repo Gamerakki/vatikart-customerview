@@ -1,7 +1,7 @@
 import React from 'react';
 import { Star, Eye, Plus } from 'lucide-react';
 
-export default function ProductCard({ product, onViewDetails, onQuickAdd }) {
+export default function ProductCard({ product, onViewDetails, onQuickAdd, companyName }) {
   // Calculate discount percentage safely
   const discount = product.originalPrice && product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -61,25 +61,28 @@ export default function ProductCard({ product, onViewDetails, onQuickAdd }) {
           </span>
         )}
 
-        {/* Product Image */}
-        <img
-          src={product.image}
-          alt={product.name}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
-          }}
-          className="product-card-img"
-          onError={(e) => {
-            // Fallback for missing local images
-            e.target.src = `https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80`;
-          }}
-        />
+        <div className="design-watermark-wrapper" style={{ position: 'absolute', inset: 0 }}>
+          <img
+            src={product.image}
+            alt={product.name}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+            className="product-card-img"
+            onError={(e) => {
+              e.target.src = `https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80`;
+            }}
+          />
+          {companyName ? (
+            <div className="design-watermark-overlay">{companyName}</div>
+          ) : null}
+        </div>
 
         {/* Hover Action Overlay */}
         <div

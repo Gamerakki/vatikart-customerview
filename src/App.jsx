@@ -233,6 +233,12 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    const disableRightClick = (e) => e.preventDefault();
+    document.addEventListener('contextmenu', disableRightClick);
+    return () => document.removeEventListener('contextmenu', disableRightClick);
+  }, []);
+
+  useEffect(() => {
     const onLanguageEvent = (event) => {
       const nextLang = event?.detail || localStorage.getItem('vatikart_lang') || 'en';
       setLang(nextLang);
@@ -594,6 +600,48 @@ export default function App() {
       selected_color: productWithVariant.selectedColor?.name || 'Default'
     });
     void trackActivity('add_to_cart', `${productWithVariant.name} (x${productWithVariant.quantity})`);
+  };
+
+  const handleAddMatrixToCart = (items) => {
+    setCart((prevCart) => {
+      const newCart = [...prevCart];
+      items.forEach((item) => {
+        const baseProduct = products.find((p) => p.id === item.productId);
+        const cartPayload = baseProduct
+          ? {
+              ...baseProduct,
+              selectedSize: item.size,
+              selectedColor: item.color,
+              selectedOptions: {},
+              quantity: item.quantity,
+            }
+          : {
+              id: item.productId,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              selectedSize: item.size,
+              selectedColor: item.color,
+            };
+
+        const idx = newCart.findIndex((cartItem) =>
+          cartItem.id === item.productId
+          && cartItem.selectedSize === item.size
+          && cartItem.selectedColor?.name === item.color.name,
+        );
+
+        if (idx > -1) {
+          newCart[idx].quantity += item.quantity;
+        } else {
+          newCart.push(cartPayload);
+        }
+      });
+      localStorage.setItem('vatikart_cart', JSON.stringify(newCart));
+      return newCart;
+    });
+
+    setIsCartOpen(true);
+    void trackActivity('add_to_cart', `Bulk matrix addition (${items.length} variants)`);
   };
 
   const postAnalytics = (eventType, productId = null, eventValue = null) => {
@@ -1227,6 +1275,30 @@ export default function App() {
                 </h2>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const section = document.getElementById('print-price-sheet-section');
+                      if (section) {
+                        section.style.display = 'block';
+                        window.print();
+                        section.style.display = 'none';
+                      }
+                    }}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: '#0D9488',
+                      color: '#FFF',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📄 Export Price List
+                  </button>
+
                   {/* Download Buttons */}
                   {selectedCatalogueId && products.length > 0 && companyInfo?.showDownloadButtons !== false && (
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -1290,6 +1362,7 @@ export default function App() {
                     <ProductCard
                       key={product.id}
                       product={product}
+                      companyName={companyInfo?.companyName}
                       onViewDetails={(prod) => {
                         setSelectedProduct(prod);
                         drawerViewRef.current = {
@@ -1487,6 +1560,7 @@ export default function App() {
         onClose={handleCloseProductDrawer}
         product={selectedProduct}
         onAddToCart={handleAddToCart}
+        onAddMatrixToCart={handleAddMatrixToCart}
         whatsappTargetPhone={whatsappTargetPhone}
       />
 
@@ -1511,8 +1585,90 @@ export default function App() {
         invoiceData={invoiceData}
       />
 
+      {/* Print Price Sheet Hidden Trigger Block */}
+      <div id="print-price-sheet-section" style={{ display: 'none' }}>
+        <div style={{ padding: '40px', fontFamily: 'sans-serif' }}>
+          <h1 style={{ fontSize: '24px', margin: '0 0 4px 0' }}>{storeTitle}</h1>
+          <p style={{ fontSize: '12px', color: '#666', margin: '0 0 20px 0' }}>
+            Wholesale Price List - Generated on {new Date().toLocaleDateString()}
+          </p>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #000' }}>
+                <th style={{ textAlign: 'left', padding: '8px' }}>Product SKU</th>
+                <th style={{ textAlign: 'left', padding: '8px' }}>Product Details</th>
+                <th style={{ textAlign: 'right', padding: '8px' }}>Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((prod) => (
+                <tr key={prod.id} style={{ borderBottom: '1px solid #ddd' }}>
+                  <td style={{ padding: '8px' }}>{prod.sku || '-'}</td>
+                  <td style={{ padding: '8px', fontWeight: 'bold' }}>{prod.name}</td>
+                  <td style={{ padding: '8px', textAlign: 'right' }}>₹{prod.price}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Responsive layout styles injection */}
       <style>{`
+        /* Disable select & drag globally on storefront */
+        * {
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+        }
+        input, textarea, select {
+          -webkit-user-select: text;
+          -moz-user-select: text;
+          -ms-user-select: text;
+          user-select: text;
+        }
+        img {
+          pointer-events: none;
+          -webkit-user-drag: none;
+          user-drag: none;
+        }
+
+        /* Watermark Container CSS */
+        .design-watermark-wrapper {
+          position: relative;
+          overflow: hidden;
+        }
+        .design-watermark-overlay {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(-30deg);
+          font-size: 16px;
+          font-weight: 900;
+          color: rgba(13, 148, 136, 0.12);
+          pointer-events: none;
+          z-index: 10;
+          white-space: nowrap;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+        }
+
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #print-price-sheet-section, #print-price-sheet-section * {
+            visibility: visible;
+          }
+          #print-price-sheet-section {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+        }
+
         .main-layout {
           display: grid;
           grid-template-columns: 280px 1fr;
