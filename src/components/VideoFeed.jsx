@@ -5,8 +5,8 @@ export default function VideoFeed({ products, onClose, onAddVariantToCart }) {
   const videoProducts = products.map((prod, idx) => ({
     ...prod,
     videoUrl: prod.videoUrl || (idx % 2 === 0
-      ? 'https://assets.mixkit.co/videos/preview/mixkit-fashion-model-showing-briefcase-34241-large.mp4'
-      : 'https://assets.mixkit.co/videos/preview/mixkit-fashion-woman-with-silver-dress-pointing-fingers-34242-large.mp4'),
+      ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+      : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4'),
   }));
 
   const containerRef = useRef(null);
@@ -25,7 +25,7 @@ export default function VideoFeed({ products, onClose, onAddVariantToCart }) {
           }
         });
       },
-      { threshold: 0.6 },
+      { threshold: 0.2 },
     );
 
     const cards = containerRef.current?.querySelectorAll('.video-card-container');

@@ -30,23 +30,25 @@ export default function VoiceOrderMic({ products, onAddToCart }) {
   }, [onAddToCart]);
 
   const parseVoiceCommand = useCallback((rawText) => {
-    const text = rawText.toLowerCase();
+    const text = rawText.toLowerCase().trim();
 
     const digitMatch = text.match(/\d+/);
     const qty = digitMatch ? parseInt(digitMatch[0], 10) : 1;
 
-    let cleanText = text.replace(/\d+/g, '');
-    FILLER_KEYWORDS.forEach((word) => {
-      const regex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-      cleanText = cleanText.replace(regex, '');
-    });
+    const cleanText = text
+      .replace(/\d+/g, '')
+      .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, ' ')
+      .trim();
 
-    const keywords = cleanText.trim().split(/\s+/).filter((w) => w.length > 2);
+    const rawWords = cleanText.split(/\s+/).map((w) => w.trim()).filter(Boolean);
+    const keywords = rawWords.filter((word) => !FILLER_KEYWORDS.includes(word));
 
     if (keywords.length === 0) {
-      setMatchStatus('Could not identify product keyword.');
+      setMatchStatus('Could not identify product keywords.');
       return;
     }
+
+    console.log('[VoiceParser] Spoken:', rawWords, 'Keywords:', keywords);
 
     const matchedProduct = productsRef.current.find((prod) => {
       const prodName = prod.name.toLowerCase();
@@ -57,7 +59,7 @@ export default function VoiceOrderMic({ products, onAddToCart }) {
       onAddToCartRef.current(matchedProduct, qty);
       setMatchStatus(`Added ${qty}x ${matchedProduct.name} to cart! 🎉`);
     } else {
-      setMatchStatus(`No match found for: "${keywords.join(' ')}"`);
+      setMatchStatus(`No product found matching "${keywords.join(' ')}"`);
     }
   }, []);
 
@@ -74,9 +76,10 @@ export default function VoiceOrderMic({ products, onAddToCart }) {
       setMatchStatus('Listening...');
     };
 
-    rec.onerror = () => {
+    rec.onerror = (event) => {
       setIsListening(false);
-      setMatchStatus('Error matching voice. Try again.');
+      setMatchStatus(`Voice Error: ${event.error || 'Check mic permission'}.`);
+      console.warn('Speech Recognition error', event);
     };
 
     rec.onend = () => {
