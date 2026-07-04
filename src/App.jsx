@@ -7,6 +7,7 @@ import ProductDrawer from './components/ProductDrawer';
 import CartDrawer from './components/CartDrawer';
 import MockInvoiceModal from './components/MockInvoiceModal';
 import CheckoutView from './components/CheckoutView';
+import BuyerAuthModal from './components/BuyerAuthModal';
 import { ShoppingBag, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { translations } from './utils/i18n';
@@ -23,8 +24,8 @@ export default function App() {
   });
   const [catalogues, setCatalogues] = useState([]);
   const [companyInfo, setCompanyInfo] = useState(null);
-
-
+  const [buyer, setBuyer] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [products, setProducts] = useState([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogNotice, setCatalogNotice] = useState(null);
@@ -154,6 +155,76 @@ export default function App() {
   const [lookupPhoneInput, setLookupPhoneInput] = useState(() => {
     return localStorage.getItem('vatikart_customer_phone') || '';
   });
+
+  useEffect(() => {
+    const cached = localStorage.getItem('buyer_profile');
+    if (cached) {
+      try {
+        const profile = JSON.parse(cached);
+        if (profile?.name && profile?.phone) {
+          setBuyer(profile);
+          setCustomerName(profile.name);
+          setCustomerPhone(profile.phone);
+          return;
+        }
+      } catch {
+        // fall through to legacy migration
+      }
+    }
+
+    try {
+      const legacy = localStorage.getItem('vatikart_customer');
+      if (legacy) {
+        const parsed = JSON.parse(legacy);
+        const phone = String(parsed.phone || '').replace(/\D/g, '').slice(-10);
+        if (parsed.name && phone.length === 10) {
+          const profile = { name: parsed.name, phone };
+          localStorage.setItem('buyer_profile', JSON.stringify(profile));
+          setBuyer(profile);
+          setCustomerName(profile.name);
+          setCustomerPhone(profile.phone);
+          return;
+        }
+      }
+    } catch {
+      // ignore legacy parse errors
+    }
+
+    setShowAuthModal(true);
+  }, []);
+
+  const handleAuthSubmit = useCallback((profile) => {
+    const normalizedPhone = profile.phone.replace(/\D/g, '').slice(-10);
+    const normalized = { name: profile.name.trim(), phone: normalizedPhone };
+    localStorage.setItem('buyer_profile', JSON.stringify(normalized));
+    localStorage.setItem('vatikart_customer', JSON.stringify(normalized));
+    localStorage.setItem('vatikart_customer_phone', normalizedPhone);
+    setBuyer(normalized);
+    setCustomerName(normalized.name);
+    setCustomerPhone(normalizedPhone);
+    setLookupPhoneInput(normalizedPhone);
+    setShowAuthModal(false);
+  }, []);
+
+  const trackActivity = useCallback(async (activityType, details) => {
+    if (!buyer || !companyInfo?.companyId) return;
+    try {
+      const { apiBase } = getStoreConfig();
+      await fetch(`${apiBase}/order/public/activity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          buyerName: buyer.name,
+          buyerPhone: buyer.phone.replace(/\D/g, ''),
+          activityType,
+          details,
+          companyId: companyInfo.companyId,
+        }),
+      });
+    } catch (err) {
+      console.warn('Failed to track activity', err);
+    }
+  }, [buyer, companyInfo?.companyId]);
 
   // Sync theme
   useEffect(() => {
@@ -522,6 +593,7 @@ export default function App() {
       selected_size: productWithVariant.selectedSize || 'One Size',
       selected_color: productWithVariant.selectedColor?.name || 'Default'
     });
+    void trackActivity('add_to_cart', `${productWithVariant.name} (x${productWithVariant.quantity})`);
   };
 
   const postAnalytics = (eventType, productId = null, eventValue = null) => {
@@ -1226,6 +1298,7 @@ export default function App() {
                         };
                         setIsProductOpen(true);
                         emitStorefrontActivity('view_product', prod.name);
+                        void trackActivity('view_product', prod.name);
                         postAnalytics('VIEW', prod.id ?? null);
                         logStorefrontEvent('view_product', {
                           product_id: prod.id,
@@ -1474,6 +1547,7 @@ export default function App() {
         }
       `}</style>
 
+      <BuyerAuthModal isOpen={showAuthModal} onSubmit={handleAuthSubmit} />
     </div>
   );
 }
