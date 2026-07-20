@@ -220,7 +220,9 @@ export async function loadStoreProducts(overrideCatalogueId = undefined) {
 
   if (subdomain) {
     try {
-      const response = await fetch(`${apiBase}/company/resolve-subdomain/${subdomain}?_ts=${Date.now()}`, {
+      const phone = localStorage.getItem('vatikart_customer_phone');
+      const phoneQuery = phone ? `&customer_phone=${encodeURIComponent(phone)}` : '';
+      const response = await fetch(`${apiBase}/company/resolve-subdomain/${subdomain}?_ts=${Date.now()}${phoneQuery}`, {
         cache: 'no-store',
         headers: { Accept: 'application/json' }
       });
