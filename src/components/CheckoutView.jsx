@@ -501,18 +501,36 @@ export default function CheckoutView({
           onClick={handleConfirm}
           className="btn btn-primary checkout-confirm-btn"
           disabled={hasMoqViolation || hasInventoryViolation}
-          style={{ width: '100%', maxWidth: '700px', height: '50px', fontSize: '1rem', fontWeight: 800, borderRadius: '12px', backgroundColor: '#000000', backgroundImage: 'none', color: '#ffffff', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px', transition: 'var(--transition-smooth)', opacity: hasMoqViolation || hasInventoryViolation ? 0.55 : 1, cursor: hasMoqViolation || hasInventoryViolation ? 'not-allowed' : 'pointer' }}
+          style={{
+            width: '100%',
+            maxWidth: '700px',
+            height: '56px',
+            fontSize: '1.1rem',
+            fontWeight: 800,
+            borderRadius: '14px',
+            backgroundColor: '#25D366',
+            backgroundImage: 'none',
+            color: '#ffffff',
+            boxShadow: '0 4px 20px rgba(37, 211, 102, 0.35)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '0 24px',
+            transition: 'all 0.25s ease',
+            opacity: hasMoqViolation || hasInventoryViolation ? 0.55 : 1,
+            cursor: hasMoqViolation || hasInventoryViolation ? 'not-allowed' : 'pointer',
+          }}
         >
-          <span style={{ letterSpacing: '0.03em' }}>{t('confirm_order').toUpperCase()}</span>
-          <span>→</span>
+          <span style={{ letterSpacing: '0.05em' }}>{t('confirm_order').toUpperCase()} VIA WHATSAPP</span>
+          <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>→</span>
         </button>
       </div>
 
       <style>{`
         .checkout-confirm-btn:hover {
-          background-color: var(--accent-primary) !important;
+          background-color: #128C7E !important;
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4) !important;
+          box-shadow: 0 6px 24px rgba(37, 211, 102, 0.55) !important;
         }
       `}</style>
     </div>

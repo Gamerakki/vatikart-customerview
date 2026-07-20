@@ -19,12 +19,21 @@ const THEME_TOKENS = {
   modern: {
     fontFamily: '"Inter", sans-serif',
     accent: '#0D9488',
-    bgPrimary: '#0F172A',
-    bgSecondary: '#1E293B',
-    textPrimary: '#F1F5F9',
-    textSecondary: '#94A3B8',
+    dark: {
+      bgPrimary: '#0F172A',
+      bgSecondary: '#1E293B',
+      textPrimary: '#F1F5F9',
+      textSecondary: '#94A3B8',
+      cardBorder: '1px solid #334155',
+    },
+    light: {
+      bgPrimary: '#f8fafc',
+      bgSecondary: '#ffffff',
+      textPrimary: '#0f172a',
+      textSecondary: '#475569',
+      cardBorder: '1px solid #e2e8f0',
+    },
     cardRadius: '12px',
-    cardBorder: '1px solid #334155',
     cardHoverTransform: 'translateY(-4px)',
     cardHoverShadow: '0 12px 20px -8px rgba(0,0,0,0.4)',
     imageAspectRatio: '1 / 1',
@@ -34,12 +43,21 @@ const THEME_TOKENS = {
   fashion: {
     fontFamily: '"Playfair Display", "Georgia", serif',
     accent: '#B45309',
-    bgPrimary: '#FAF7F2',
-    bgSecondary: '#F3EFE6',
-    textPrimary: '#1A1816',
-    textSecondary: '#5A544F',
+    light: {
+      bgPrimary: '#FAF7F2',
+      bgSecondary: '#F3EFE6',
+      textPrimary: '#1A1816',
+      textSecondary: '#5A544F',
+      cardBorder: '1px solid #E5E1D8',
+    },
+    dark: {
+      bgPrimary: '#121110',
+      bgSecondary: '#1C1A18',
+      textPrimary: '#FAF7F2',
+      textSecondary: '#A59F99',
+      cardBorder: '1px solid #2C2927',
+    },
     cardRadius: '0px',
-    cardBorder: '1px solid #E5E1D8',
     cardHoverTransform: 'scale(1.015)',
     cardHoverShadow: '0 4px 12px rgba(27,24,22,0.06)',
     imageAspectRatio: '3 / 4',
@@ -49,12 +67,21 @@ const THEME_TOKENS = {
   toy: {
     fontFamily: '"Quicksand", sans-serif',
     accent: '#FB7185',
-    bgPrimary: '#EFF6FF',
-    bgSecondary: '#DBEAFE',
-    textPrimary: '#1E3A8A',
-    textSecondary: '#4B5563',
+    light: {
+      bgPrimary: '#EFF6FF',
+      bgSecondary: '#DBEAFE',
+      textPrimary: '#1E3A8A',
+      textSecondary: '#4B5563',
+      cardBorder: '2px dashed #93C5FD',
+    },
+    dark: {
+      bgPrimary: '#0A122C',
+      bgSecondary: '#111E46',
+      textPrimary: '#EFF6FF',
+      textSecondary: '#93C5FD',
+      cardBorder: '2px dashed #1E3A8A',
+    },
     cardRadius: '24px',
-    cardBorder: '2px dashed #93C5FD',
     cardHoverTransform: 'scale(1.05) rotate(1deg)',
     cardHoverShadow: '0 10px 25px -5px rgba(30,58,138,0.12)',
     imageAspectRatio: '1 / 1',
@@ -64,12 +91,21 @@ const THEME_TOKENS = {
   organic: {
     fontFamily: '"Inter", sans-serif',
     accent: '#10B981',
-    bgPrimary: '#F0FDF4',
-    bgSecondary: '#FFFFFF',
-    textPrimary: '#064E3B',
-    textSecondary: '#374151',
+    light: {
+      bgPrimary: '#F0FDF4',
+      bgSecondary: '#FFFFFF',
+      textPrimary: '#064E3B',
+      textSecondary: '#374151',
+      cardBorder: '1px solid #A7F3D0',
+    },
+    dark: {
+      bgPrimary: '#041E11',
+      bgSecondary: '#092F1C',
+      textPrimary: '#F0FDF4',
+      textSecondary: '#A7F3D0',
+      cardBorder: '1px solid #064E3B',
+    },
     cardRadius: '8px 32px 8px 32px',
-    cardBorder: '1px solid #A7F3D0',
     cardHoverTransform: 'translateY(-4px) scale(1.01)',
     cardHoverShadow: '0 10px 20px -8px rgba(6,78,59,0.1)',
     imageAspectRatio: '1 / 1',
@@ -1060,6 +1096,7 @@ export default function App() {
   }
 
   const currentTokens = THEME_TOKENS[storefrontTheme] || THEME_TOKENS.modern;
+  const modeTokens = currentTokens[theme] || currentTokens.light || currentTokens.dark;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -1067,12 +1104,13 @@ export default function App() {
         :root {
           --font-family-store: ${currentTokens.fontFamily};
           --accent-primary: ${currentTokens.accent};
-          --bg-primary: ${currentTokens.bgPrimary};
-          --bg-secondary: ${currentTokens.bgSecondary};
-          --text-primary: ${currentTokens.textPrimary};
-          --text-secondary: ${currentTokens.textSecondary};
+          --bg-primary: ${modeTokens.bgPrimary};
+          --bg-secondary: ${modeTokens.bgSecondary};
+          --card-bg: ${modeTokens.bgSecondary};
+          --text-primary: ${modeTokens.textPrimary};
+          --text-secondary: ${modeTokens.textSecondary};
           --card-radius: ${currentTokens.cardRadius};
-          --card-border: ${currentTokens.cardBorder};
+          --card-border: ${modeTokens.cardBorder};
           --card-hover-transform: ${currentTokens.cardHoverTransform};
           --card-hover-shadow: ${currentTokens.cardHoverShadow};
           --image-aspect-ratio: ${currentTokens.imageAspectRatio};

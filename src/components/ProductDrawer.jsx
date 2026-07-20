@@ -68,7 +68,10 @@ export default function ProductDrawer({ isOpen, onClose, product, onAddToCart, o
       }
     : product;
 
-  const isB2BMatrix = product.priceMode !== 'perSet' && product.colors && product.colors.length > 0 && product.sizes && product.sizes.length > 0;
+  const hasColors = product.colors && product.colors.length > 0 && !(product.colors.length === 1 && (product.colors[0].name?.toLowerCase() === 'default' || product.colors[0].name?.toLowerCase() === 'standard'));
+  const hasSizes = product.sizes && product.sizes.length > 0 && !(product.sizes.length === 1 && (product.sizes[0]?.toLowerCase() === 'one size' || product.sizes[0]?.toLowerCase() === 'default' || product.sizes[0]?.toLowerCase() === 'standard' || product.sizes[0]?.label?.toLowerCase() === 'one size'));
+
+  const isB2BMatrix = product.priceMode !== 'perSet' && (hasColors || hasSizes);
   const volumeDiscountRows = (Array.isArray(product.bulkDiscounts) ? product.bulkDiscounts : [])
     .map((row) => ({
       minQty: Number(row.min_qty ?? row.minQty ?? 0),
