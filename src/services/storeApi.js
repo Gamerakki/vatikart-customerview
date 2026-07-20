@@ -9,18 +9,19 @@ function parseCatalogueIdFromPath() {
 }
 
 export function getStoreConfig() {
-  const hostname = window.location.hostname;
+  const hostname = window.location.hostname.toLowerCase();
   const parts = hostname.split('.');
   
   let subdomain = null;
-  // If hostname has 3 parts (subdomain.domain.tld) and first part isn't www, api, or localhost
-  if (parts.length >= 3 && parts[0] !== 'www' && parts[0] !== 'api' && parts[0] !== 'localhost') {
-    subdomain = parts[0];
-  }
-  
-  // For local testing (e.g. companyname.localhost), check if it ends with .localhost and has a subdomain
-  if (hostname.endsWith('.localhost') && parts.length >= 2 && parts[0] !== 'localhost') {
-    subdomain = parts[0];
+
+  const isVatikartHost = hostname.endsWith('vatikart.in') || hostname.endsWith('localhost');
+
+  if (isVatikartHost) {
+    if (parts.length >= 3 && parts[0] !== 'www' && parts[0] !== 'api') {
+      subdomain = parts[0];
+    }
+  } else {
+    subdomain = hostname;
   }
 
   const params = new URLSearchParams(window.location.search);
@@ -229,13 +230,22 @@ export async function loadStoreProducts(overrideCatalogueId = undefined) {
           companyInfo = {
             companyId: body.data.company_id,
             companyName: body.data.company_name,
+            tagline: body.data.tagline || null,
             logoImgPath: body.data.logo_img_path,
             salesPhone: body.data.sales_phone || body.data.salesPhone || null,
             supportPhone: body.data.support_phone || body.data.supportPhone || null,
             policies: body.data.policies || null,
             showDownloadButtons: body.data.show_download_buttons ?? true,
+            address: body.data.address || null,
+            pincode: body.data.pincode || null,
+            email: body.data.email || null,
+            supportEmail: body.data.support_email || body.data.supportEmail || null,
+            salesEmail: body.data.sales_email || body.data.salesEmail || null,
           };
-          catalogues = body.data.catalogues || [];
+          catalogues = (body.data.catalogues || []).map((catalogue) => ({
+            ...catalogue,
+            title: catalogue.title || catalogue.catalogue_name || 'Unnamed Catalogue',
+          }));
           
           if (!resolvedCatalogueId) {
             if (catalogues.length === 1) {

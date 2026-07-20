@@ -251,6 +251,14 @@ export default function App() {
   const [customerOrders, setCustomerOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState('');
+  const [showLeadModal, setShowLeadModal] = useState(false);
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+  const [leadForm, setLeadForm] = useState({
+    name: '',
+    businessName: '',
+    phone: '',
+    email: '',
+  });
   const [lookupPhoneInput, setLookupPhoneInput] = useState(() => {
     return localStorage.getItem('vatikart_customer_phone') || '';
   });
@@ -849,6 +857,48 @@ export default function App() {
   const handleCloseInvoice = () => {
     setInvoiceData(null);
     setCart([]); // Clear cart upon successful invoice booking
+  };
+
+  const handleSubmitBusinessEnquiry = async (event) => {
+    event.preventDefault();
+    if (isSubmittingLead) return;
+
+    const payload = {
+      name: leadForm.name.trim(),
+      business_name: leadForm.businessName.trim(),
+      phone: leadForm.phone.replace(/\D/g, ''),
+      email: leadForm.email.trim() || null,
+      company_id: companyInfo?.companyId ?? null,
+    };
+
+    if (!payload.name || !payload.business_name || payload.phone.length < 10) {
+      alert('Please fill in name, business name, and a valid WhatsApp number.');
+      return;
+    }
+
+    setIsSubmittingLead(true);
+    try {
+      const { apiBase } = getStoreConfig();
+      const response = await fetch(`${apiBase}/company/business-enquiry`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !body?.status) {
+        throw new Error(body?.msg || 'Failed to submit enquiry.');
+      }
+      setShowLeadModal(false);
+      setLeadForm({ name: '', businessName: '', phone: '', email: '' });
+      alert('Enquiry submitted successfully.');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to submit enquiry.');
+    } finally {
+      setIsSubmittingLead(false);
+    }
   };
 
   const handleConfirmCheckout = async (checkoutDetails) => {
@@ -1703,17 +1753,101 @@ export default function App() {
         />
       )}
 
-      {/* Footer copyright */}
-      <footer style={{ borderTop: '1px solid var(--border-color)', padding: '24px 0', backgroundColor: 'var(--bg-secondary)' }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-          <span>© {new Date().getFullYear()} VatiKart Store. All rights reserved. Powered by VatiKart.</span>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <a href="#privacy" style={{ hover: { color: 'var(--accent-primary)' } }}>Privacy Policy</a>
-            <a href="#terms">Terms of Service</a>
-            <a href="#contact">Contact Merchant</a>
+      <footer style={{ borderTop: '1px solid var(--border-color)', padding: '36px 0', backgroundColor: 'var(--bg-secondary)' }}>
+        <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '24px', color: 'var(--text-secondary)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.05rem' }}>{storeTitle}</h3>
+            {companyInfo?.tagline ? <p style={{ margin: 0 }}>{companyInfo.tagline}</p> : null}
+            {companyInfo?.address ? <p style={{ margin: 0 }}>{companyInfo.address}</p> : null}
+            {companyInfo?.pincode ? <p style={{ margin: 0 }}>Pincode: {companyInfo.pincode}</p> : null}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <h4 style={{ margin: 0, color: 'var(--text-primary)' }}>Contact Us</h4>
+            {companyInfo?.email ? <p style={{ margin: 0 }}>Email: {companyInfo.email}</p> : null}
+            {companyInfo?.salesEmail ? <p style={{ margin: 0 }}>Sales Email: {companyInfo.salesEmail}</p> : null}
+            {companyInfo?.supportEmail ? <p style={{ margin: 0 }}>Support Email: {companyInfo.supportEmail}</p> : null}
+            {companyInfo?.salesPhone ? <p style={{ margin: 0 }}>Sales: {companyInfo.salesPhone}</p> : null}
+            {companyInfo?.supportPhone ? <p style={{ margin: 0 }}>Support: {companyInfo.supportPhone}</p> : null}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <h4 style={{ margin: 0, color: 'var(--text-primary)' }}>Store Policies</h4>
+            <div style={{ maxHeight: '120px', overflowY: 'auto', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+              {companyInfo?.policies || 'Policies will be published here soon.'}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <h4 style={{ margin: 0, color: 'var(--text-primary)' }}>Business Enquiries</h4>
+            <p style={{ margin: 0 }}>Interested in launching your own digital wholesale storefront?</p>
+            <button
+              type="button"
+              onClick={() => setShowLeadModal(true)}
+              style={{
+                alignSelf: 'flex-start',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: 'none',
+                backgroundColor: 'var(--accent-primary)',
+                color: '#fff',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Powered by VatiKart
+            </button>
           </div>
         </div>
       </footer>
+
+      {showLeadModal ? (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '460px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '18px', padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Business Enquiry</h3>
+              <button type="button" onClick={() => setShowLeadModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem' }}>x</button>
+            </div>
+            <form onSubmit={handleSubmitBusinessEnquiry} style={{ display: 'grid', gap: '12px' }}>
+              <input
+                type="text"
+                placeholder="Your Name"
+                value={leadForm.name}
+                onChange={(e) => setLeadForm((prev) => ({ ...prev, name: e.target.value }))}
+                style={{ padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+              />
+              <input
+                type="text"
+                placeholder="Business Name"
+                value={leadForm.businessName}
+                onChange={(e) => setLeadForm((prev) => ({ ...prev, businessName: e.target.value }))}
+                style={{ padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+              />
+              <input
+                type="tel"
+                placeholder="WhatsApp Number"
+                value={leadForm.phone}
+                onChange={(e) => setLeadForm((prev) => ({ ...prev, phone: e.target.value }))}
+                style={{ padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+              />
+              <input
+                type="email"
+                placeholder="Email (optional)"
+                value={leadForm.email}
+                onChange={(e) => setLeadForm((prev) => ({ ...prev, email: e.target.value }))}
+                style={{ padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+              />
+              <button
+                type="submit"
+                disabled={isSubmittingLead}
+                style={{ padding: '12px', borderRadius: '10px', border: 'none', backgroundColor: 'var(--accent-primary)', color: '#fff', fontWeight: 800, cursor: isSubmittingLead ? 'not-allowed' : 'pointer', opacity: isSubmittingLead ? 0.7 : 1 }}
+              >
+                {isSubmittingLead ? 'Submitting...' : 'Submit Enquiry'}
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       {/* Product Detail Drawer */}
       <ProductDrawer
