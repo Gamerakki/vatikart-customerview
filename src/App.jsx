@@ -960,8 +960,10 @@ export default function App() {
         : compiledFromTemplate;
 
       const sanitizedTargetPhone = (whatsappTargetPhone || '').replace(/[^0-9]/g, '');
-      window.open(updatedWhatsappMsg ? `https://wa.me/${sanitizedTargetPhone}?text=${encodeURIComponent(updatedWhatsappMsg)}` : `https://wa.me/${sanitizedTargetPhone}`, '_blank');
-      
+      const whatsappUrl = updatedWhatsappMsg
+        ? `https://wa.me/${sanitizedTargetPhone}?text=${encodeURIComponent(updatedWhatsappMsg)}`
+        : `https://wa.me/${sanitizedTargetPhone}`;
+
       // Log Firebase Checkout Event
       logStorefrontEvent('checkout_whatsapp', {
         order_id: orderId,
@@ -972,7 +974,7 @@ export default function App() {
         items_count: checkoutDetails.items.length
       });
 
-      // 3. Open printable invoice modal receipt
+      // Open printable invoice modal receipt (WhatsApp share happens from invoice actions)
       setInvoiceData({
         customer: checkoutDetails.customer,
         items: checkoutDetails.items,
@@ -980,6 +982,7 @@ export default function App() {
         tax: checkoutDetails.tax,
         total: checkoutDetails.total,
         orderId: orderId,
+        whatsappUrl,
         date: new Date().toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',

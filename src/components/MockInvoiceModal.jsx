@@ -1,10 +1,10 @@
 import React from 'react';
-import { X, CheckCircle2, Printer, Download } from 'lucide-react';
+import { X, CheckCircle2, Printer, Download, MessageCircle } from 'lucide-react';
 
 export default function MockInvoiceModal({ isOpen, onClose, invoiceData }) {
   if (!isOpen || !invoiceData) return null;
 
-  const { customer, items, subtotal, tax, total, orderId, date } = invoiceData;
+  const { customer, items, subtotal, tax, total, orderId, date, whatsappUrl } = invoiceData;
 
   const handlePrint = () => {
     window.print();
@@ -108,7 +108,7 @@ export default function MockInvoiceModal({ isOpen, onClose, invoiceData }) {
             <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />
             <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>Order Invoice Generated</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               onClick={handleDownloadCSV}
               className="btn btn-secondary"
@@ -125,6 +125,27 @@ export default function MockInvoiceModal({ isOpen, onClose, invoiceData }) {
               <Printer size={14} />
               Print
             </button>
+            {whatsappUrl ? (
+              <button
+                onClick={() => window.open(whatsappUrl, '_blank', 'noopener,noreferrer')}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '0.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: '#25D366',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                }}
+              >
+                <MessageCircle size={14} />
+                Share on WhatsApp
+              </button>
+            ) : null}
             <button
               onClick={onClose}
               style={{

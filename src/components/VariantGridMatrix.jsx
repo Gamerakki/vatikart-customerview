@@ -40,7 +40,7 @@ export default function VariantGridMatrix({ product, onAddMatrixToCart }) {
   };
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} data-testid="variant-matrix-root">
       <h3 style={styles.title}>B2B Quick Order Matrix</h3>
       <div style={{ overflowX: 'auto' }}>
         <table style={styles.table}>
@@ -62,6 +62,7 @@ export default function VariantGridMatrix({ product, onAddMatrixToCart }) {
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
+                      data-testid={`matrix-qty-${String(color.name).replace(/\s+/g, '-').toLowerCase()}-${String(size).replace(/\s+/g, '-').toLowerCase()}`}
                       value={matrixQty[matrixKey(color.name, size)] || ''}
                       onChange={(e) => handleQtyChange(color.name, size, e.target.value)}
                       placeholder="0"
@@ -74,7 +75,7 @@ export default function VariantGridMatrix({ product, onAddMatrixToCart }) {
           </tbody>
         </table>
       </div>
-      <button type="button" onClick={handleAddAll} style={styles.btn}>
+      <button type="button" onClick={handleAddAll} style={styles.btn} data-testid="matrix-add-to-cart">
         Add Matrix to Cart 🛒
       </button>
     </div>
