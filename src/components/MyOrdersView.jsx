@@ -14,7 +14,6 @@ export default function MyOrdersView({
   });
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [otpDemo, setOtpDemo] = useState('');
   const [sessionToken, setSessionToken] = useState(() => sessionStorage.getItem(SESSION_KEY) || '');
   const [verifiedPhone, setVerifiedPhone] = useState(() => sessionStorage.getItem('vatikart_verified_phone') || '');
   const [orders, setOrders] = useState([]);
@@ -62,10 +61,9 @@ export default function MyOrdersView({
     setSending(true);
     setError('');
     try {
-      const result = await sendStorefrontOtp(normalized);
+      await sendStorefrontOtp(normalized);
       setPhone(normalized);
       setOtpSent(true);
-      setOtpDemo(result.otp_demo || '');
       setResendIn(30);
       setOtp('');
     } catch (err) {
@@ -147,6 +145,9 @@ export default function MyOrdersView({
 
           {otpSent ? (
             <>
+              <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                A 6-digit verification code has been sent to your WhatsApp number.
+              </div>
               <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
                 Enter 6-digit OTP
               </label>
@@ -160,11 +161,6 @@ export default function MyOrdersView({
                 className="form-input"
                 style={{ height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', letterSpacing: '0.3em', fontWeight: 800 }}
               />
-              {otpDemo ? (
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted, var(--text-tertiary))' }}>
-                  Demo OTP (dev): <strong>{otpDemo}</strong>
-                </div>
-              ) : null}
               <button
                 className="btn btn-primary"
                 disabled={verifying}
@@ -173,6 +169,17 @@ export default function MyOrdersView({
               >
                 {verifying ? 'Verifying…' : 'Verify & View Orders'}
               </button>
+              <a
+                className="btn btn-secondary"
+                href={`https://wa.me/918898109059?text=${encodeURIComponent(
+                  `Hi VatiKart, please resend my OTP for phone ${phone.slice(-10)}.`,
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ height: 44, borderRadius: 10, displayDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                💬 Resend via WhatsApp Web
+              </a>
             </>
           ) : null}
         </div>
