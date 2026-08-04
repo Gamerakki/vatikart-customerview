@@ -7,13 +7,12 @@ import ProductDrawer from './components/ProductDrawer';
 import CartDrawer from './components/CartDrawer';
 import MockInvoiceModal from './components/MockInvoiceModal';
 import CheckoutView from './components/CheckoutView';
+import MyOrdersView from './components/MyOrdersView';
 import BuyerAuthModal from './components/BuyerAuthModal';
 import { ShoppingBag, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { translations } from './utils/i18n';
 import { requestNotificationPermissionAndGetToken, logStorefrontEvent, initRemoteConfig } from './utils/firebase';
-
-const ORDER_STEPS = ['UNCONFIRMED', 'CONFIRMED', 'ACCEPTED', 'COMPLETED'];
 
 const THEME_TOKENS = {
   modern: {
@@ -284,9 +283,6 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [invoiceData, setInvoiceData] = useState(null);
   const [currentView, setCurrentView] = useState('catalog'); // 'catalog' | 'checkout' | 'orders'
-  const [customerOrders, setCustomerOrders] = useState([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
-  const [ordersError, setOrdersError] = useState('');
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [leadForm, setLeadForm] = useState({
@@ -294,9 +290,6 @@ export default function App() {
     businessName: '',
     phone: '',
     email: '',
-  });
-  const [lookupPhoneInput, setLookupPhoneInput] = useState(() => {
-    return localStorage.getItem('vatikart_customer_phone') || '';
   });
 
   useEffect(() => {
@@ -404,42 +397,6 @@ export default function App() {
 
   const t = (key) => translations[lang]?.[key] || translations.en[key] || key;
   const whatsappTargetPhone = companyInfo?.salesPhone || companyInfo?.supportPhone || resellerPhone || '919876543210';
-
-  const loadCustomerOrders = useCallback(async (phoneOverride) => {
-    const phoneToUse = (phoneOverride !== undefined ? phoneOverride : localStorage.getItem('vatikart_customer_phone') || '').trim();
-    if (!phoneToUse) {
-      setCustomerOrders([]);
-      setOrdersError('Please enter your phone number to check your orders.');
-      return;
-    }
-
-    setOrdersLoading(true);
-    setOrdersError('');
-    try {
-      const { apiBase } = getStoreConfig();
-      const response = await fetch(`${apiBase}/order/public/customer/${encodeURIComponent(phoneToUse)}`, {
-        headers: { Accept: 'application/json' },
-      });
-
-      const body = await response.json();
-      if (!response.ok || !body?.status) {
-        throw new Error(body?.msg || 'Failed to fetch customer orders.');
-      }
-
-      setCustomerOrders(Array.isArray(body.data) ? body.data : []);
-      // If successful, cache this number so they don't need to re-type it next time
-      localStorage.setItem('vatikart_customer_phone', phoneToUse);
-      const result = await loadStoreProducts(selectedCatalogueId);
-      if (result && result.products) {
-        setProducts(result.products);
-      }
-    } catch (error) {
-      setOrdersError(error instanceof Error ? error.message : 'Unable to load orders right now.');
-      setCustomerOrders([]);
-    } finally {
-      setOrdersLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
     const socketBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.vatikart.in';
@@ -940,7 +897,14 @@ export default function App() {
   const handleConfirmCheckout = async (checkoutDetails) => {
     try {
       // 1. Save order to database and get generated order_id
-      const result = await bookPublicOrder(checkoutDetails, selectedCatalogueId);
+      const result = await bookPublicOrder(
+        {
+          ...checkoutDetails,
+          company_id: checkoutDetails.company_id || companyInfo?.companyId || null,
+          catalogue_id: checkoutDetails.catalogue_id || selectedCatalogueId,
+        },
+        selectedCatalogueId,
+      );
       const orderId = result.order_id || ('VK-' + Math.floor(100000 + Math.random() * 900000));
       
       const orderLink = `${window.location.origin}${window.location.pathname}?order_id=${encodeURIComponent(orderId)}`;
@@ -1202,7 +1166,6 @@ export default function App() {
         t={t}
         onMyOrdersClick={() => {
           setCurrentView('orders');
-          void loadCustomerOrders();
         }}
         wholesalePricingApplied={wholesalePricingApplied}
         wholesaleGroupName={wholesaleGroupName}
@@ -1665,117 +1628,11 @@ export default function App() {
           </main>
         )
       ) : currentView === 'orders' ? (
-        <main className="container" style={{ flex: 1, padding: '32px 24px', width: '100%', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)' }}>{t('my_orders_title')}</h2>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                className="btn btn-secondary"
-                onClick={() => {
-                  void loadCustomerOrders(lookupPhoneInput);
-                }}
-              >
-                {t('refresh')}
-              </button>
-              <button className="btn btn-outline" onClick={() => setCurrentView('catalog')}>{t('back_to_store')}</button>
-            </div>
-          </div>
-
-          {/* Manual phone lookup input */}
-          <div style={{
-            background: 'var(--card-bg)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '12px',
-            padding: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}>
-            <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-              {t('check_orders_by_phone')}
-            </label>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <input
-                type="text"
-                placeholder="Enter phone number (e.g. 9876543210)"
-                value={lookupPhoneInput}
-                onChange={(e) => setLookupPhoneInput(e.target.value)}
-                className="form-input"
-                style={{ flex: 1, height: '42px', padding: '0 12px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)' }}
-              />
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  void loadCustomerOrders(lookupPhoneInput);
-                }}
-                style={{ height: '42px', padding: '0 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                {t('search')}
-              </button>
-            </div>
-          </div>
-
-          {ordersLoading ? (
-            <div style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{t('loading_orders')}</div>
-          ) : ordersError ? (
-            <div style={{ color: 'var(--danger)', fontWeight: 700 }}>{ordersError}</div>
-          ) : customerOrders.length === 0 ? (
-            <div style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{t('no_orders_found')}</div>
-          ) : (
-            <div style={{ display: 'grid', gap: '14px' }}>
-              {customerOrders.map((order) => {
-                const currentStepIndex = ORDER_STEPS.indexOf(order.status);
-
-                return (
-                  <div key={order.orderId} style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                      <div style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Order #{order.orderId}</div>
-                      <div style={{ color: 'var(--accent-primary)', fontWeight: 800 }}>{order.status}</div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {ORDER_STEPS.map((step, idx) => (
-                        <div
-                          key={step}
-                          style={{
-                            fontSize: '0.72rem',
-                            padding: '4px 8px',
-                            borderRadius: '999px',
-                            border: '1px solid var(--border-color)',
-                            color: idx <= currentStepIndex ? 'var(--accent-primary)' : 'var(--text-tertiary)',
-                            background: idx <= currentStepIndex ? 'var(--accent-light)' : 'transparent',
-                            fontWeight: 700,
-                          }}
-                        >
-                          {step}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                      {t('order_date')}: {new Date(order.addedDate).toLocaleString()}
-                    </div>
-
-                    <div style={{ display: 'grid', gap: '6px', fontSize: '0.86rem' }}>
-                      <div style={{ color: 'var(--text-secondary)' }}>Subtotal: <strong style={{ color: 'var(--text-primary)' }}>₹{Number(order.subtotal || 0).toFixed(2)}</strong></div>
-                      <div style={{ color: 'var(--text-secondary)' }}>Tax: <strong style={{ color: 'var(--text-primary)' }}>₹{Number(order.tax || 0).toFixed(2)}</strong></div>
-                      <div style={{ color: 'var(--text-secondary)' }}>Total: <strong style={{ color: 'var(--text-primary)' }}>₹{Number(order.total || 0).toFixed(2)}</strong></div>
-                    </div>
-
-                    <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '8px', display: 'grid', gap: '5px' }}>
-                      {(order.items || []).map((item) => (
-                        <div key={item.id} style={{ color: 'var(--text-secondary)', fontSize: '0.84rem', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-                          <span>{item.title} x {item.qty}</span>
-                          <strong style={{ color: 'var(--text-primary)' }}>₹{Number(item.price || 0).toFixed(2)}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </main>
+        <MyOrdersView
+          t={t}
+          initialPhone={customerPhone || localStorage.getItem('vatikart_customer_phone') || ''}
+          onBackToStore={() => setCurrentView('catalog')}
+        />
       ) : (
         <CheckoutView
           cartItems={cart}

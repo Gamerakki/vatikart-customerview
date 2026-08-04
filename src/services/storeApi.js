@@ -343,47 +343,140 @@ export async function requestAccessToCatalogue(catalogueId, customerName, custom
 
 export async function bookPublicOrder(checkoutDetails, catalogueIdOverride = null) {
   const { catalogueId: configCatalogueId, apiBase, margin } = getStoreConfig();
-  const catalogueId = catalogueIdOverride || configCatalogueId;
-  
+  const catalogueId = catalogueIdOverride || configCatalogueId || checkoutDetails?.catalogue_id;
+
+  const customer = checkoutDetails?.customer || {};
+  const buyerName = String(customer.name || checkoutDetails?.buyer_name || '').trim();
+  const buyerPhone = String(customer.phone || checkoutDetails?.buyer_phone || '').replace(/\D/g, '');
+  const buyerAddress = String(customer.address || checkoutDetails?.buyer_address || 'N/A').trim() || 'N/A';
+
+  const rawItems = Array.isArray(checkoutDetails?.items) ? checkoutDetails.items : [];
+  const items = rawItems
+    .map((item) => {
+      const productId = Number(item.product_id ?? item.productId ?? item.id);
+      const qty = Math.max(1, Number(item.qty ?? item.quantity ?? 1) || 1);
+      const price = Number(item.price ?? 0);
+      if (!Number.isFinite(productId) || productId <= 0) return null;
+      return {
+        product_id: productId,
+        qty,
+        price: Number.isFinite(price) ? price : 0,
+        selected_size: item.selectedSize && item.selectedSize !== 'One Size' ? item.selectedSize : (item.selected_size || null),
+        selected_color: item.selectedColor?.name || item.selected_color || null,
+      };
+    })
+    .filter(Boolean);
+
+  if (!catalogueId) {
+    throw new Error('Missing catalogue. Please reload the storefront and try again.');
+  }
+  if (!buyerName || buyerPhone.length < 10) {
+    throw new Error('Please enter a valid name and 10-digit phone number.');
+  }
+  if (items.length === 0) {
+    throw new Error('Your cart is empty or contains invalid products.');
+  }
+
   const payload = {
-    catalogue_id: isNaN(parseInt(catalogueId, 10)) ? catalogueId : parseInt(catalogueId, 10),
-    customer_name: checkoutDetails.customer.name,
-    customer_phone: checkoutDetails.customer.phone,
-    customer_address: checkoutDetails.customer.address,
-    items: checkoutDetails.items.map((item) => ({
-      product_id: parseInt(item.id, 10),
-      qty: item.quantity,
-      price: Number(item.price),
-      selected_size: item.selectedSize && item.selectedSize !== 'One Size' ? item.selectedSize : null,
-      selected_color: item.selectedColor ? item.selectedColor.name : null,
-    })),
-    subtotal: Number(checkoutDetails.subtotal),
-    discount: Number(checkoutDetails.discount),
-    shipping: 0,
-    tax: Number(checkoutDetails.tax),
-    total: Number(checkoutDetails.total),
+    catalogue_id: isNaN(parseInt(String(catalogueId), 10)) ? catalogueId : parseInt(String(catalogueId), 10),
+    company_id: checkoutDetails?.company_id ?? checkoutDetails?.companyId ?? null,
+    customer_name: buyerName,
+    buyer_name: buyerName,
+    customer_phone: buyerPhone,
+    buyer_phone: buyerPhone,
+    customer_address: buyerAddress,
+    items,
+    subtotal: Number(checkoutDetails?.subtotal ?? 0) || 0,
+    discount: Number(checkoutDetails?.discount ?? 0) || 0,
+    shipping: Number(checkoutDetails?.shipping ?? 0) || 0,
+    tax: Number(checkoutDetails?.tax ?? 0) || 0,
+    total: Number(checkoutDetails?.total ?? 0) || 0,
     reseller_markup: Number(margin || 0),
   };
 
-  const response = await fetch(`${apiBase}/order/public/book`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to save order to database.');
+  let response;
+  try {
+    response = await fetch(`${apiBase}/order/public/book`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    throw new Error('Network error while saving order. Please check your connection.');
   }
 
-  const result = await response.json();
-  if (!result.status) {
-    throw new Error(result.msg || 'Failed to save order to database.');
+  let result = null;
+  try {
+    result = await response.json();
+  } catch {
+    result = null;
+  }
+
+  if (!response.ok || !result?.status) {
+    const detail =
+      (typeof result?.error === 'string' && result.error)
+      || result?.msg
+      || (result?.error && typeof result.error === 'object'
+        ? Object.values(result.error).join(', ')
+        : null)
+      || `Failed to save order to database. (${response.status})`;
+    throw new Error(detail);
   }
 
   return result.data; // contains order_id and total
+}
+
+export async function sendStorefrontOtp(phone) {
+  const { apiBase } = getStoreConfig();
+  const response = await fetch(`${apiBase}/otp/send`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ phone: String(phone || '').replace(/\D/g, '') }),
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok || !body?.status) {
+    throw new Error(body?.msg || 'Failed to send OTP');
+  }
+  return body;
+}
+
+export async function verifyStorefrontOtp(phone, otp) {
+  const { apiBase } = getStoreConfig();
+  const response = await fetch(`${apiBase}/otp/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      phone: String(phone || '').replace(/\D/g, ''),
+      otp: String(otp || '').trim(),
+    }),
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok || !body?.status) {
+    throw new Error(body?.msg || 'Invalid or expired OTP');
+  }
+  return body;
+}
+
+export async function fetchMyOrders(phone, sessionToken) {
+  const { apiBase } = getStoreConfig();
+  const response = await fetch(
+    `${apiBase}/order/my-orders?phone=${encodeURIComponent(String(phone || '').replace(/\D/g, ''))}`,
+    {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${sessionToken}`,
+        'x-otp-session': sessionToken,
+      },
+    },
+  );
+  const body = await response.json().catch(() => null);
+  if (!response.ok || !body?.status) {
+    throw new Error(body?.msg || 'Failed to fetch customer orders.');
+  }
+  return Array.isArray(body.data) ? body.data : [];
 }
 
 export async function registerCustomerPushToken(phone, pushToken) {

@@ -223,16 +223,29 @@ export default function CheckoutView({
     });
 
     onConfirmOrder({
-      customer,
+      customer: {
+        name: customer.name.trim(),
+        phone: customer.phone.replace(/\D/g, ''),
+        address: customer.address.trim() || 'N/A',
+      },
+      buyer_name: customer.name.trim(),
+      buyer_phone: customer.phone.replace(/\D/g, ''),
+      company_id: getStoreConfig()?.companyId || null,
+      catalogue_id: getStoreConfig()?.catalogueId || null,
       items: cartItems.map((item, idx) => ({
         ...item,
+        product_id: Number(item.product_id ?? item.productId ?? item.id),
+        id: Number(item.product_id ?? item.productId ?? item.id),
+        qty: Number(item.quantity || 1),
+        quantity: Number(item.quantity || 1),
         price: getEffectivePrice(item, item.quantity, cartItems),
         comment: itemComments[idx],
       })),
-      subtotal,
-      discount: totalSavings,
-      tax,
-      total: totalAmount,
+      subtotal: Number(subtotal) || 0,
+      discount: Number(totalSavings) || 0,
+      tax: Number(roundedTax) || 0,
+      total: Number(totalAmount) || 0,
+      shipping: 0,
       whatsappTemplate: orderConfirmText,
       whatsappMsg: parsedTemplateMessage,
       whatsappVars: {
