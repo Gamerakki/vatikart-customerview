@@ -145,8 +145,19 @@ export default function MyOrdersView({
 
           {otpSent ? (
             <>
-              <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                A 6-digit verification code has been sent to your WhatsApp number.
+              <div
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: 12,
+                  background: 'rgba(34, 197, 94, 0.12)',
+                  border: '1px solid rgba(34, 197, 94, 0.28)',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  lineHeight: 1.45,
+                }}
+              >
+                🔒 Verification code sent directly to your WhatsApp.
               </div>
               <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
                 Enter 6-digit OTP
@@ -169,17 +180,6 @@ export default function MyOrdersView({
               >
                 {verifying ? 'Verifying…' : 'Verify & View Orders'}
               </button>
-              <a
-                className="btn btn-secondary"
-                href={`https://wa.me/918898109059?text=${encodeURIComponent(
-                  `Hi VatiKart, please resend my OTP for phone ${phone.slice(-10)}.`,
-                )}`}
-                target="_blank"
-                rel="noreferrer"
-                style={{ height: 44, borderRadius: 10, displayDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                💬 Resend via WhatsApp Web
-              </a>
             </>
           ) : null}
         </div>
